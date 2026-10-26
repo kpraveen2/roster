@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roster — the employee record for AI agents</title>
+<meta name="description" content="Roster finds every AI agent your company runs, names the human accountable for it, and handles onboarding, reviews and offboarding the way HR handles people.">
+<style>
+  :root { color-scheme: light; --blue:#2563eb; --blue2:#1d4ed8; --bluebg:#eff6ff; --ink:#0f172a; --text:#1e293b; --muted:#64748b; --line:#e2e8f0; --line2:#f1f5f9; --bg:#f8fafc; --card:#fff; --ok:#15803d; --okbg:#dcfce7; --warn:#b45309; --warnbg:#fef3c7; --bad:#b91c1c; --badbg:#fee2e2; --crit:#7f1d1d; --critbg:#fecaca; --purple:#6d28d9; --purplebg:#ede9fe; --navy:var(--blue); --r:14px; }
+  * { box-sizing:border-box; }
+  html { -webkit-font-smoothing:antialiased; }
+  body { margin:0; font-family:Inter,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--text); background:var(--bg); font-size:13.5px; }
+  a { color:var(--blue); }
+  /* ---------- landing ---------- */
+  #landing { min-height:100vh; background:linear-gradient(180deg,#fff 0%,#f8fafc 100%); }
+  .lnav { display:flex; justify-content:space-between; align-items:center; padding:18px 40px; max-width:1180px; margin:0 auto; }
+  .logo { display:flex; align-items:center; gap:9px; font-weight:800; font-size:19px; color:var(--ink); letter-spacing:-.3px; }
+  .logo i { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,#2563eb,#7c3aed); display:inline-block; position:relative; }
+  .logo i:after { content:""; position:absolute; left:8px; top:8px; width:12px; height:12px; border:2.5px solid #fff; border-radius:4px; }
+  .lnav .links { display:flex; gap:22px; align-items:center; font-size:14px; color:var(--muted); }
+  .lnav .links a { color:var(--muted); text-decoration:none; }
+  .hero { max-width:1180px; margin:0 auto; padding:70px 40px 40px; display:grid; grid-template-columns:1.1fr 1fr; gap:48px; align-items:center; }
+  .hero h1 { font-size:46px; line-height:1.08; letter-spacing:-1.2px; margin:0 0 18px; color:var(--ink); font-weight:800; }
+  .hero h1 span { color:var(--blue); }
+  .hero p { font-size:17px; color:var(--muted); line-height:1.6; margin:0 0 26px; max-width:560px; }
+  .hero .cta { display:flex; gap:10px; flex-wrap:wrap; }
+  .eyebrow { display:inline-block; font-size:12px; font-weight:600; color:var(--blue); background:var(--bluebg); border-radius:20px; padding:4px 11px; margin-bottom:16px; }
+  .shot { background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:0 30px 60px -20px rgba(15,23,42,.25); padding:14px; }
+  .shot .fake { font-size:12px; }
+  .props { max-width:1180px; margin:0 auto; padding:30px 40px 70px; display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .prop { background:#fff; border:1px solid var(--line); border-radius:var(--r); padding:20px; }
+  .prop h3 { margin:0 0 6px; font-size:15px; color:var(--ink); } .prop p { margin:0; color:var(--muted); font-size:13.5px; line-height:1.55; }
+  .prop .n { font-size:11px; font-weight:700; color:var(--blue); margin-bottom:8px; letter-spacing:.5px; }
+  .lfoot { max-width:1180px; margin:0 auto; padding:0 40px 40px; color:var(--muted); font-size:12px; line-height:1.6; }
+  /* ---------- app shell ---------- */
+  .app { display:none; grid-template-columns:240px 1fr; min-height:100vh; }
+  body.in-app #landing { display:none; } body.in-app .app { display:grid; }
+  nav { background:#fff; border-right:1px solid var(--line); padding:16px 12px; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; }
+  .brand { padding:6px 8px 14px; margin-bottom:6px; }
+  .brand small { display:block; font-weight:400; font-size:11px; color:var(--muted); margin-top:3px; }
+  .tenant { margin:4px 0 14px; }
+  .tenant select { width:100%; padding:8px 9px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--ink); font-size:13px; font-weight:600; }
+  .tenant .meta { font-size:11px; color:var(--muted); margin-top:7px; line-height:1.5; padding:0 2px; }
+  nav .nb { all:unset; display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-radius:9px; cursor:pointer; margin:1px 0; font-size:13.5px; color:#334155; font-weight:500; }
+  nav .nb:hover { background:var(--line2); } nav .nb.active { background:var(--bluebg); color:var(--blue2); font-weight:600; }
+  nav .pill { background:#ef4444; color:#fff; font-size:10.5px; padding:1px 7px; border-radius:10px; font-weight:700; }
+  nav .pill.amber { background:#f59e0b; } nav .pill.blue { background:#e2e8f0; color:#334155; }
+  nav .sec { font-size:10.5px; text-transform:uppercase; letter-spacing:.7px; color:#94a3b8; margin:14px 10px 4px; font-weight:600; }
+  nav .foot { margin-top:auto; font-size:10.5px; color:var(--muted); line-height:1.5; padding:8px; border-top:1px solid var(--line2); }
+  .hdr { position:sticky; top:0; z-index:5; background:rgba(255,255,255,.85); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; padding:10px 26px; }
+  .hdr input { flex:1; max-width:460px; padding:8px 12px 8px 34px; border:1px solid var(--line); border-radius:10px; font-size:13px; background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'><circle cx='11' cy='11' r='7'/><path d='m20 20-3.5-3.5'/></svg>") 11px center no-repeat; }
+  .hdr .sp { flex:1; }
+  .avatar { width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,#f59e0b,#ef4444); color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  main { min-width:0; }
+  #main { padding:22px 26px 70px; max-width:1240px; }
+  .topbar { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; gap:16px; }
+  .topbar h1 { font-size:22px; margin:0; letter-spacing:-.4px; color:var(--ink); } .topbar .sub { color:var(--muted); font-size:13px; margin-top:4px; max-width:780px; line-height:1.5; }
+  .cards { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:14px 16px; }
+  .card .k { font-size:11.5px; color:var(--muted); font-weight:500; } .card .v { font-size:26px; font-weight:700; margin-top:4px; color:var(--ink); letter-spacing:-.5px; } .card .d { font-size:11.5px; margin-top:5px; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:16px 18px; margin-bottom:14px; }
+  .panel h2 { font-size:14.5px; margin:0 0 10px; display:flex; justify-content:space-between; align-items:center; color:var(--ink); }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; } .grid3 { display:grid; grid-template-columns:2fr 1fr; gap:14px; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th { text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); padding:8px 8px; border-bottom:1px solid var(--line); white-space:nowrap; font-weight:600; }
+  td { padding:9px 8px; border-bottom:1px solid var(--line2); vertical-align:top; }
+  tr.click { cursor:pointer; } tr.click:hover td { background:#f8fafc; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:11px; font-size:10.5px; font-weight:600; white-space:nowrap; margin:1px 2px 1px 0; }
+  .ok { background:var(--okbg); color:var(--ok); } .warn { background:var(--warnbg); color:var(--warn); } .bad { background:var(--badbg); color:var(--bad); } .crit { background:var(--critbg); color:var(--crit); } .blue { background:var(--bluebg); color:var(--blue2); } .grey { background:#f1f5f9; color:#475569; } .purple { background:var(--purplebg); color:var(--purple); }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:5px; }
+  .btn { background:var(--blue); color:#fff; border:none; border-radius:10px; padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer; box-shadow:0 1px 2px rgba(15,23,42,.08); }
+  .btn:hover { background:var(--blue2); }
+  .btn.sec { background:#fff; color:var(--ink); border:1px solid var(--line); box-shadow:none; } .btn.sec:hover { background:var(--line2); }
+  .btn.sm { padding:5px 10px; font-size:12px; border-radius:8px; } .btn.danger { background:var(--bad); } .btn.ghost { background:transparent; color:var(--muted); border:1px solid var(--line); box-shadow:none; }
+  .btn.lg { padding:12px 20px; font-size:15px; border-radius:12px; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .toolbar { display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
+  .toolbar input, .toolbar select { padding:8px 10px; border:1px solid var(--line); border-radius:10px; font-size:12.5px; background:#fff; }
+  .event { background:#fff; border:1px solid var(--line); border-left:4px solid #ef4444; border-radius:12px; padding:13px 16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .event.transfer { border-left-color:#f59e0b; } .event.leave { border-left-color:#3b82f6; }
+  .event b { font-size:14px; color:var(--ink); } .event .meta { color:var(--muted); font-size:12px; margin-top:3px; }
+  .steps { display:flex; gap:6px; margin-bottom:14px; }
+  .step { flex:1; padding:8px 10px; border-radius:9px; background:#fff; border:1px solid var(--line); font-size:11.5px; color:var(--muted); }
+  .step.on { border-color:var(--blue); color:var(--blue2); font-weight:700; background:var(--bluebg); } .step.done { color:var(--ok); border-color:#bbf7d0; background:#f0fdf4; }
+  .scan { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; background:#0f172a; color:#cbd5e1; border-radius:12px; padding:12px 14px; max-height:260px; overflow:auto; line-height:1.65; }
+  .scan .g { color:#86efac; } .scan .y { color:#fde68a; } .scan .r { color:#fca5a5; }
+  .agent { border:1px solid var(--line); border-radius:var(--r); padding:14px 16px; margin-bottom:10px; background:#fff; display:grid; grid-template-columns:1fr 300px; gap:16px; }
+  .agent.sens { border-color:#fca5a5; }
+  .agent h3 { margin:0 0 3px; font-size:14px; color:var(--ink); } .agent .desc { color:var(--muted); font-size:12.5px; margin-bottom:6px; }
+  .kv { display:grid; grid-template-columns:110px 1fr; gap:3px 8px; font-size:12px; } .kv .k { color:var(--muted); }
+  .decide label { display:block; padding:7px 10px; border:1px solid var(--line); border-radius:9px; margin-bottom:5px; cursor:pointer; font-size:12.5px; }
+  .decide label:has(input:checked) { border-color:var(--blue); background:var(--bluebg); }
+  .decide select, .form select, .form input, .form textarea { width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:8px; font-size:12.5px; background:#fff; font-family:inherit; }
+  .decide select { margin-top:5px; }
+  .note { font-size:11.5px; color:var(--bad); margin-top:5px; }
+  .log div.row { padding:8px 0; border-bottom:1px solid var(--line2); display:grid; grid-template-columns:150px 1fr 110px; gap:10px; font-size:12.5px; }
+  .log .t { color:var(--muted); font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; } .log .h { color:#94a3b8; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:10.5px; }
+  .hidden { display:none !important; }
+  .banner { background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; border-radius:10px; padding:10px 13px; font-size:12.5px; margin-bottom:12px; }
+  .banner.info { background:var(--bluebg); border-color:#bfdbfe; color:#1e3a8a; }
+  .right { text-align:right; } .muted { color:var(--muted); } .mono { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px; }
+  .bar { height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden; } .bar i { display:block; height:100%; background:var(--blue); }
+  .finding { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--line2); align-items:flex-start; font-size:12.5px; }
+  .finding .sev { width:64px; flex:none; }
+  .drawer { position:fixed; top:0; right:0; width:540px; max-width:95vw; height:100vh; background:#fff; border-left:1px solid var(--line); box-shadow:-12px 0 40px rgba(15,23,42,.12); padding:20px 22px; overflow:auto; z-index:50; }
+  .drawer h2 { margin:0 0 4px; font-size:18px; color:var(--ink); letter-spacing:-.3px; } .drawer .close { position:absolute; top:12px; right:14px; background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted); }
+  .drawer h4 { margin:16px 0 6px; font-size:11.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); font-weight:600; }
+  .modal-bg { position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:60; display:flex; align-items:center; justify-content:center; }
+  .modal { background:#fff; border-radius:16px; width:680px; max-width:95vw; max-height:90vh; overflow:auto; padding:22px 24px; box-shadow:0 30px 60px rgba(15,23,42,.3); }
+  .modal h2 { margin:0 0 10px; font-size:17px; color:var(--ink); }
+  .form .row { display:grid; grid-template-columns:150px 1fr; gap:8px; align-items:center; margin-bottom:8px; font-size:12.5px; }
+  .form .row .k { color:var(--muted); }
+  .chk { display:flex; flex-wrap:wrap; gap:6px; } .chk label { border:1px solid var(--line); border-radius:14px; padding:3px 9px; font-size:12px; cursor:pointer; } .chk label:has(input:checked) { background:var(--bluebg); border-color:var(--blue); color:var(--blue2); } .chk input { display:none; }
+  pre.evi { background:#f8fafc; border:1px solid var(--line); border-radius:10px; padding:12px; font-size:11.5px; max-height:400px; overflow:auto; white-space:pre-wrap; }
+  .toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:#0f172a; color:#fff; padding:10px 16px; border-radius:10px; font-size:12.5px; z-index:99; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+  .proto { position:fixed; bottom:8px; right:12px; font-size:10.5px; color:#94a3b8; }
+  .wiz { display:flex; gap:6px; margin-bottom:12px; } .wiz span { flex:1; font-size:11.5px; padding:7px 9px; border-radius:9px; border:1px solid var(--line); color:var(--muted); background:#fff; } .wiz span.on { border-color:var(--blue); color:var(--blue2); font-weight:700; background:var(--bluebg); }
+  .reg { border:1px solid var(--line); border-radius:var(--r); padding:12px 14px; margin-bottom:8px; background:#fff; }
+  .reg h3 { margin:0 0 4px; font-size:13.5px; display:flex; justify-content:space-between; color:var(--ink); } .reg .why { font-size:12px; color:var(--muted); margin-bottom:6px; }
+  .ctl { display:grid; grid-template-columns:80px 1fr 150px; gap:8px; font-size:12px; padding:5px 0; border-top:1px dashed var(--line2); }
+  @media (max-width:980px){ .app{grid-template-columns:1fr} nav{height:auto;position:static;flex-direction:row;flex-wrap:wrap;gap:4px;border-right:none;border-bottom:1px solid var(--line)} nav .foot,nav .sec{display:none} .tenant{width:100%} .cards{grid-template-columns:repeat(2,1fr)} .agent,.grid2,.grid3,.hero,.props{grid-template-columns:1fr} .hero h1{font-size:34px} .lnav,.hero,.props,.lfoot{padding-left:20px;padding-right:20px} }
+</style>
+</head>
+<body>
+<section id="landing">
+  <div class="lnav">
+    <div class="logo"><i></i>Roster</div>
+    <div class="links"><a href="#" onclick="enterApp();return false">Live demo</a><a href="#how">How it works</a><a href="#" onclick="requestAccess();return false">Request early access</a><button class="btn" onclick="enterApp()">Open the demo</button></div>
+  </div>
+  <div class="hero">
+    <div>
+      <span class="eyebrow">The employee record for AI agents</span>
+      <h1>When Sarah leaves,<br>what happens to <span>Sarah's agents?</span></h1>
+      <p>Roster finds every AI agent and automation your company runs across OpenAI, Copilot Studio, Zapier, Salesforce and 30+ platforms, names the human accountable for each one, and handles onboarding, reviews, and offboarding the way HR handles people. Built for the companies that will never buy Workday or ServiceNow.</p>
+      <div class="cta"><button class="btn lg" onclick="enterApp()">Open the interactive demo</button><button class="btn sec lg" onclick="requestAccess()">Request a Ghost Agent Audit</button></div>
+      <p style="font-size:12.5px;margin-top:14px;color:#94a3b8">Demo runs entirely in your browser with sample data. Nothing is uploaded.</p>
+    </div>
+    <div class="shot"><div class="fake">
+      <div style="display:flex;gap:8px;margin-bottom:10px"><div class="card" style="flex:1"><div class="k">Ghost agents</div><div class="v" style="color:#b91c1c">7</div><div class="d muted">owner left the company</div></div><div class="card" style="flex:1"><div class="k">Live credentials held</div><div class="v" style="color:#b91c1c">11</div><div class="d muted">on nobody's budget</div></div></div>
+      <div class="scan" style="max-height:none;font-size:11px"><span style="color:#94a3b8">workday</span>&nbsp;&nbsp;&nbsp;termination · Sarah Chen · last day Oct 30<br><span style="color:#94a3b8">openai</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="y">1 custom GPT</span> → Bid Leveler<br><span style="color:#94a3b8">zapier</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="y">1 active</span> → Sub Invoice Matcher · QuickBooks write<br><span style="color:#94a3b8">copilot</span>&nbsp;&nbsp;&nbsp;<span class="y">1 agent</span> → Daily Log Summarizer<br><span style="color:#94a3b8">slack</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="y">1 bot</span> → Owner Update Bot · external channel<br><span class="g">done&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6 agents · 9 live credentials · 3 sensitive</span></div>
+      <div style="display:flex;gap:6px;margin-top:10px"><span class="tag crit">money authority, no limit</span><span class="tag bad">PHI, no BAA</span><span class="tag warn">review overdue</span><span class="tag ok">reassigned</span></div>
+    </div></div>
+  </div>
+  <div class="props" id="how">
+    <div class="prop"><div class="n">01 · DISCOVER</div><h3>Find the agents nobody registered</h3><p>Read-only connectors enumerate agents, bots and automations across the platforms your teams actually use, and tie each one to the person who built or credentialed it.</p></div>
+    <div class="prop"><div class="n">02 · ASSIGN</div><h3>Every agent gets a manager</h3><p>A named accountable owner, a signed authority limit for anything that moves money or commits the company, and the approvals your industry's rules require: HIPAA, Opinion 512, FINRA 3110, TCPA.</p></div>
+    <div class="prop"><div class="n">03 · OFFBOARD</div><h3>Triggered by your HRIS, not by luck</h3><p>When Rippling or Workday says someone is leaving, their manager gets a checklist: reassign, rebind to a service identity, or retire. Tokens rotate, the record is signed, the auditor is happy.</p></div>
+  </div>
+  <div class="lfoot">Roster is a prototype. All company, people and agent data in the demo is fictional. Vendor and platform names are used to describe integrations and do not imply endorsement or affiliation. Regulatory references are summaries for product illustration, not legal advice.</div>
+</section>
+<div class="app">
+  <nav>
+    <div class="brand"><div class="logo" style="font-size:18px;cursor:pointer" onclick="leaveApp()"><i></i>Roster</div><small>the employee record for AI agents</small></div>
+    <div class="tenant">
+      <select id="tenantSel" onchange="switchTenant(this.value)"></select>
+      <div class="meta" id="tenantMeta"></div>
+    </div>
+    <button class="nb" data-v="overview"><span>Overview</span></button>
+    <button class="nb" data-v="roster"><span>Agent roster</span><span class="pill blue" id="n-roster"></span></button>
+    <div class="sec">Lifecycle</div>
+    <button class="nb" data-v="onboard"><span>Onboarding</span><span class="pill amber" id="n-onboard"></span></button>
+    <button class="nb" data-v="offboard"><span>Offboarding</span><span class="pill" id="n-offboard"></span></button>
+    <button class="nb" data-v="reviews"><span>Reviews</span><span class="pill amber" id="n-reviews"></span></button>
+    <button class="nb" data-v="ghost"><span>Ghost agent audit</span><span class="pill" id="n-ghost"></span></button>
+    <div class="sec">Accountability</div>
+    <button class="nb" data-v="authority"><span>Authority &amp; delegation</span></button>
+    <button class="nb" data-v="compliance"><span>Compliance evidence</span></button>
+    <button class="nb" data-v="incidents"><span>Incidents</span><span class="pill" id="n-incidents"></span></button>
+    <button class="nb" data-v="log"><span>Audit log</span></button>
+    <div class="foot" id="footConn"></div>
+  </nav>
+  <main>
+    <div class="hdr"><input placeholder="Search agents, owners, systems…" oninput="rosterFilter.q=this.value;if(view!=='roster')show('roster');else document.getElementById('rosterBody').innerHTML=rosterRows()"><div class="sp"></div><button class="btn sec sm" onclick="requestAccess()">Request early access</button><div class="avatar">KK</div></div>
+    <div id="main"></div>
+  </main>
+</div>
+<div id="overlay"></div>
+<div class="proto">Prototype · demo data · regulations summarized, not legal advice</div>
+
+<script>
+/* ============================================================ DATA ============================================================ */
+const D = s => { const [y,m,d]=String(s).split('-').map(Number); return new Date(y,m-1,d); };
+const TODAY = D('2026-10-26');
+const fmt = d => D(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+const daysAgo = d => Math.round((TODAY - D(d))/86400000);
+const PLAT = { 'Abridge':'#0ea5e9','Hippocratic AI':'#14b8a6','Epic':'#dc2626','Copilot Studio':'#2563eb','OpenAI':'#10a37f','Anthropic':'#d97706','n8n':'#ea4b71','Zapier':'#ff4a00','Salesforce':'#00a1e0','Tennr':'#8b5cf6','Hebbia':'#111827','Rogo':'#0f766e','Harvey':'#1e3a8a','Legora':'#7c3aed','CoCounsel':'#f97316','Microsoft Copilot':'#2563eb','Intapp':'#64748b','Sierra':'#059669','Parloa':'#db2777','Cresta':'#4f46e5','Retell':'#f59e0b','Zendesk':'#03363d','CodeRabbit':'#f97316','GitHub Actions':'#111','Bloomberg':'#000','Relativity':'#f59e0b','Twilio':'#f22f46' };
+const plat = p => `<span class="dot" style="background:${PLAT[p]||'#999'}"></span>${p}`;
+
+/* credential types: oauth | apikey | consumer (personal consumer-tier account) | svc (managed service identity) | license (named-user license) | entra | pat */
+function A(o){ return Object.assign({ kind:'homegrown', status:'active', incidents30d:0, approvals:{}, authority:null, credentials:[], dataClasses:[], actions:[], systems:[], scopesGranted:0, scopesUsed:0, logs:false, disclosure:false, matterScoped:null, baa:null }, o); }
+
+const TENANTS = {
+  health: {
+    name:'Lakeside Health', industry:'Health system', meta:'3 hospitals · 41 clinics · 4,200 staff · Workday + Okta + Imprivata',
+    conn:'Workday · Okta · Imprivata · Epic · Abridge · Hippocratic AI · Copilot Studio · OpenAI · Anthropic · n8n · Zapier · Salesforce Health Cloud',
+    turnover:'RN turnover 17.6% (NSI 2026); physician turnover median 7.3% (AAPPR 2025). 72% of health systems say AI tools are deployed without IT approval at least occasionally (Imprivata, Sep 2026).',
+    people:[
+      {id:'p1',name:'Dr. Elena Vasquez',title:'Hospitalist · Associate CMIO',dept:'Clinical Informatics',status:'leaving',last:'2026-10-31',manager:'Dr. Sam Whitaker (CMIO)',event:'termination'},
+      {id:'p2',name:'Dr. Sam Whitaker',title:'CMIO',dept:'Clinical Informatics',status:'active'},
+      {id:'p3',name:'Marcus Bell',title:'Revenue Cycle Analyst',dept:'Revenue Cycle',status:'left',last:'2026-06-12',manager:'Dana Ruiz (VP Revenue Cycle)'},
+      {id:'p4',name:'Dana Ruiz',title:'VP Revenue Cycle',dept:'Revenue Cycle',status:'active'},
+      {id:'p5',name:'Priya Shah',title:'Director of Nursing Operations',dept:'Nursing',status:'active'},
+      {id:'p6',name:'Tom Nguyen',title:'Pharmacy Informatics Pharmacist',dept:'Pharmacy',status:'transfer',last:'2026-11-07',manager:'Lisa Chen (Dir. Pharmacy)',event:'transfer',to:'Supply Chain Analytics'},
+      {id:'p7',name:'Kim Osei',title:'Medical Staff Coordinator',dept:'Medical Staff Office',status:'left',last:'2026-08-01',manager:'Rob Diaz'},
+      {id:'p8',name:'Rob Diaz',title:'Director, Medical Staff Office',dept:'Medical Staff Office',status:'active'},
+      {id:'p9',name:'Privacy Office (Aisha Grant)',title:'Chief Privacy Officer',dept:'Compliance',status:'active'},
+      {id:'p10',name:'Clinical AI service identity',title:'svc-clinical-ai@lakeside',dept:'IT',status:'active',svc:true},
+    ],
+    agents:[
+      A({id:'h1',name:'Ambient Clinical Scribe',platform:'Abridge',kind:'vendor',owner:'p2',dept:'Clinical Informatics',purpose:'Listens to visits, drafts the note into Epic for clinician sign-off. 1,180 clinician users.',dataClasses:['PHI'],actions:['read','write'],systems:['Epic (notes)','Microphone audio'],credentials:[{type:'svc',issuedTo:'p10',label:'Epic app credential'}],baa:true,costMo:118000,runs30d:61400,lastReview:'2026-09-20',nextReview:'2026-12-20',approvals:{clinical:true,privacy:true,security:true},scopesGranted:4,scopesUsed:4,logs:true,disclosure:true}),
+      A({id:'h2',name:'Post-Discharge Follow-up Caller',platform:'Hippocratic AI',kind:'vendor',owner:'p5',dept:'Nursing',purpose:'Calls patients 48h after discharge, checks symptoms and meds, escalates to a nurse.',dataClasses:['PHI'],actions:['read','patient-facing','send-external'],systems:['Epic (ADT, med list)','Telephony'],credentials:[{type:'svc',issuedTo:'p10',label:'Epic FHIR app'}],baa:true,costMo:24000,runs30d:3900,lastReview:'2026-08-02',nextReview:'2026-11-02',approvals:{clinical:true,privacy:true,security:true,medicalDirector:true},scopesGranted:6,scopesUsed:5,logs:true,disclosure:true,incidents30d:1}),
+      A({id:'h3',name:'In Basket Reply Drafter',platform:'Epic',kind:'vendor',owner:'p1',dept:'Clinical Informatics',purpose:'Drafts replies to MyChart patient messages for clinicians to edit and send.',dataClasses:['PHI'],actions:['read','write'],systems:['Epic (In Basket)'],credentials:[{type:'svc',issuedTo:'p10',label:'Epic feature'}],baa:true,costMo:9500,runs30d:22000,lastReview:'2026-07-11',nextReview:'2026-10-11',approvals:{clinical:true,privacy:true,security:true},scopesGranted:2,scopesUsed:2,logs:true,disclosure:true}),
+      A({id:'h4',name:'Prior Auth Packager',platform:'Copilot Studio',owner:'p1',dept:'Clinical Informatics',purpose:'Assembles prior-authorization packets from the chart and submits to payer portals.',dataClasses:['PHI'],actions:['read','send-external'],systems:['Epic (chart read)','Availity','CoverMyMeds'],credentials:[{type:'oauth',issuedTo:'p1',label:'Epic OAuth (Elena)'},{type:'apikey',issuedTo:'p1',label:'Availity API key'}],baa:true,costMo:1400,runs30d:860,lastReview:'2026-08-15',nextReview:'2026-11-15',approvals:{clinical:true,privacy:true,security:true},scopesGranted:9,scopesUsed:4,logs:true}),
+      A({id:'h5',name:'Denials Appeal Writer',platform:'OpenAI',owner:'p3',dept:'Revenue Cycle',purpose:'Custom GPT that drafts appeal letters from denial reasons and clinical notes pasted in.',dataClasses:['PHI'],actions:['read','write'],systems:['Chart excerpts (pasted)','Word'],credentials:[{type:'consumer',issuedTo:'p3',label:'ChatGPT Plus (personal, marcus.bell@gmail)'}],baa:false,costMo:20,runs30d:140,lastReview:null,nextReview:null,approvals:{},scopesGranted:0,scopesUsed:0,logs:false}),
+      A({id:'h6',name:'OR Block Optimizer',platform:'n8n',owner:'p1',dept:'Perioperative',purpose:'Re-allocates unused OR block time and emails surgeons’ offices.',dataClasses:['PHI'],actions:['read','send-external'],systems:['Epic OpTime','Outlook'],credentials:[{type:'oauth',issuedTo:'p1',label:'Epic OAuth (Elena)'},{type:'oauth',issuedTo:'p1',label:'M365 (Elena)'}],baa:true,costMo:300,runs30d:120,lastReview:'2026-09-01',nextReview:'2026-12-01',approvals:{clinical:true,security:true},scopesGranted:5,scopesUsed:3,logs:true}),
+      A({id:'h7',name:'Nurse Staffing Forecaster',platform:'Copilot Studio',owner:'p5',dept:'Nursing',purpose:'Predicts unit census and suggests staffing; feeds the scheduling system.',dataClasses:['PHI'],actions:['read','write'],systems:['Epic (census)','UKG'],credentials:[{type:'entra',issuedTo:'p10',label:'Entra app'}],baa:true,costMo:800,runs30d:90,lastReview:'2026-10-01',nextReview:'2027-01-01',approvals:{clinical:true,privacy:true,security:true},scopesGranted:3,scopesUsed:3,logs:true}),
+      A({id:'h8',name:'Referral Intake Agent',platform:'Tennr',kind:'vendor',owner:'p4',dept:'Access Center',purpose:'Reads faxed referrals, extracts patient and insurance data, creates the referral in Epic.',dataClasses:['PHI'],actions:['read','write'],systems:['Fax server','Epic (referrals)'],credentials:[{type:'svc',issuedTo:'p10',label:'Epic FHIR app'}],baa:true,costMo:6500,runs30d:4100,lastReview:'2026-09-10',nextReview:'2026-12-10',approvals:{privacy:true,security:true},scopesGranted:4,scopesUsed:4,logs:true}),
+      A({id:'h9',name:'Pharmacy Refill SMS Reminder',platform:'Zapier',owner:'p6',dept:'Pharmacy',purpose:'Texts patients when a refill is ready; replies route to the pharmacy queue.',dataClasses:['PHI'],actions:['read','patient-facing','send-external'],systems:['Epic Willow','Twilio'],credentials:[{type:'apikey',issuedTo:'p6',label:'Twilio key (Tom)'},{type:'oauth',issuedTo:'p6',label:'Epic OAuth (Tom)'}],baa:true,costMo:210,runs30d:5200,lastReview:null,nextReview:null,approvals:{security:true},scopesGranted:3,scopesUsed:3,logs:false,disclosure:false,tcpa:false}),
+      A({id:'h10',name:'Discharge Summary Summarizer',platform:'Anthropic',owner:'p1',dept:'Clinical Informatics',purpose:'Condenses a hospital stay into a one-page summary for the PCP.',dataClasses:['PHI'],actions:['read','write'],systems:['Epic (notes)'],credentials:[{type:'apikey',issuedTo:'p10',label:'Anthropic enterprise key'}],baa:true,costMo:1900,runs30d:1500,lastReview:'2026-09-25',nextReview:'2026-12-25',approvals:{clinical:true,privacy:true,security:true},scopesGranted:2,scopesUsed:2,logs:true}),
+      A({id:'h11',name:'Credentialing Bot',platform:'Zapier',owner:'p7',dept:'Medical Staff Office',purpose:'Pulls NPDB and license board data for physician credentialing files.',dataClasses:['PII'],actions:['read','write'],systems:['NPDB','State boards','MD-Staff'],credentials:[{type:'apikey',issuedTo:'p7',label:'NPDB query key (Kim)'},{type:'oauth',issuedTo:'p7',label:'MD-Staff OAuth (Kim)'}],costMo:60,runs30d:210,lastReview:null,nextReview:null,approvals:{},scopesGranted:0,scopesUsed:0,logs:false}),
+      A({id:'h12',name:'Sepsis Early Warning Model',platform:'Epic',kind:'vendor',owner:'p2',dept:'Quality',purpose:'Predictive decision-support model scoring inpatients for sepsis risk (ONC HTI-1 source attributes published).',dataClasses:['PHI'],actions:['read','clinical-decision'],systems:['Epic (flowsheets, labs)'],credentials:[{type:'svc',issuedTo:'p10',label:'Epic feature'}],baa:true,costMo:0,runs30d:98000,lastReview:'2026-10-05',nextReview:'2027-01-05',approvals:{clinical:true,privacy:true,security:true,medicalDirector:true},scopesGranted:3,scopesUsed:3,logs:true,disclosure:true}),
+      A({id:'h13',name:'Payer Contract Analyzer',platform:'Hebbia',kind:'vendor',owner:'p4',dept:'Managed Care',purpose:'Reads payer contracts and flags underpayments against remits.',dataClasses:['Financial'],actions:['read'],systems:['Contract repository','835 remits'],credentials:[{type:'svc',issuedTo:'p10',label:'Hebbia SSO'}],costMo:7800,runs30d:300,lastReview:'2026-09-12',nextReview:'2026-12-12',approvals:{security:true},scopesGranted:2,scopesUsed:2,logs:true}),
+      A({id:'h14',name:'Patient Complaint Triage',platform:'OpenAI',owner:'p1',dept:'Patient Experience',purpose:'Classifies grievances by severity and routes to risk management.',dataClasses:['PHI'],actions:['read','write'],systems:['Qualtrics','ServiceNow'],credentials:[{type:'apikey',issuedTo:'p1',label:'OpenAI org key (created by Elena)'}],baa:true,costMo:240,runs30d:410,lastReview:'2026-06-30',nextReview:'2026-09-30',approvals:{privacy:true,security:true},scopesGranted:3,scopesUsed:2,logs:true}),
+    ],
+    regs:[
+      {id:'hipaa',name:'HIPAA Privacy & Security Rules',why:'Every agent that touches PHI needs a business associate agreement with the vendor, minimum-necessary access, and access logs. Censinet reports only 23% of health systems had BAAs for third-party AI tools.',controls:[
+        {id:'baa',name:'PHI only processed under a BAA',test:a=>a.dataClasses.includes('PHI')?(a.baa?'pass':'fail'):'na'},
+        {id:'minnec',name:'Minimum-necessary: granted scopes within 2x of scopes used',test:a=>a.dataClasses.includes('PHI')?((a.scopesGranted<=Math.max(2,a.scopesUsed*2))?'pass':'fail'):'na'},
+        {id:'logs',name:'Access and activity logs retained',test:a=>a.dataClasses.includes('PHI')?(a.logs?'pass':'fail'):'na'},
+        {id:'term',name:'Workforce termination procedure covers agent credentials (§164.308(a)(3))',test:a=>credDeparted(a)?'fail':'pass'},
+      ]},
+      {id:'tjc',name:'Joint Commission / CHAI — Responsible Use of AI in Healthcare (voluntary certification, Jun 2026)',why:'Expects a governance structure that keeps the board aware of AI uses, validation and monitoring, and AI-related safety events recorded like patient safety events.',controls:[
+        {id:'owner',name:'Every AI tool has a named accountable owner',test:a=>ownerOk(a)?'pass':'fail'},
+        {id:'review',name:'Validated and reviewed within the last 90 days',test:a=>reviewOk(a)?'pass':'fail'},
+        {id:'inc',name:'Safety events recorded against the tool',test:a=>'pass'},
+      ]},
+      {id:'hti1',name:'ONC HTI-1 — Decision Support Intervention transparency',why:'Predictive DSIs delivered through certified EHR technology must publish source attributes so clinicians can see how the model was built and monitored.',controls:[
+        {id:'dsi',name:'Predictive DSIs have published source attributes',test:a=>a.actions.includes('clinical-decision')?(a.disclosure?'pass':'fail'):'na'},
+      ]},
+      {id:'tcpa',name:'TCPA / patient communications',why:'Automated calls and texts to patients require prior express consent; patient-facing agents should disclose they are automated.',controls:[
+        {id:'consent',name:'Outbound SMS/calls backed by documented consent',test:a=>(a.actions.includes('patient-facing')&&a.actions.includes('send-external'))?((a.tcpa!==false)?'pass':'fail'):'na'},
+        {id:'disc',name:'Patient-facing agents disclose automation',test:a=>a.actions.includes('patient-facing')?(a.disclosure?'pass':'fail'):'na'},
+      ]},
+    ],
+    extras:[
+      'Epic: revoke user-context OAuth grants and confirm no break-the-glass access occurred via agent sessions in the last 90 days',
+      'Imprivata: remove Elena from the clinical AI access group; re-run Epic audit trail report for agent service accounts she administered',
+      'Privacy Office: confirm no PHI left under a personal credential; file §164.308(a)(3) termination evidence',
+    ],
+    incidents:[
+      {date:'2026-10-19',agent:'h2',sev:'medium',title:'Follow-up caller misread a medication name and advised a patient to continue a discontinued drug',status:'Review open',owner:'p5'},
+      {date:'2026-09-02',agent:'h5',sev:'high',title:'Privacy Office found de-identification not applied before chart text was pasted into a personal ChatGPT account',status:'Escalated · owner departed',owner:'p4'},
+    ],
+    onboardPresets:{name:'Bed Placement Coordinator Agent',purpose:'Suggests bed assignments from ED boarding list and unit capacity; posts recommendations to the transfer center.',platform:'Copilot Studio',dept:'Patient Flow',dataClasses:['PHI'],actions:['read','write'],systems:['Epic (ADT, capacity)','Teams'],cost:600},
+  },
+
+  legal: {
+    name:'Whitfield & Grant LLP', industry:'Law firm', meta:'620 lawyers · 1,100 staff · 9 offices (NY, DC, SF, London, Frankfurt) · Workday + Okta',
+    conn:'Workday · Okta · iManage · Intapp · Harvey · Legora · CoCounsel · Microsoft Copilot · OpenAI · Zapier · n8n · Relativity',
+    turnover:'Associate attrition 19% in 2025 (NALP Foundation); 83% of departing associates leave within five years. Lateral partner moves take matters, and the agents scoped to them, out the door.',
+    people:[
+      {id:'p1',name:'Marcus Hale',title:'Partner · M&A',dept:'Corporate',status:'leaving',last:'2026-11-14',manager:'Office of General Counsel / Practice Chair: Rebecca Lin',event:'termination',note:'Lateral move to a competitor; taking 3 client relationships'},
+      {id:'p2',name:'Rebecca Lin',title:'Practice Chair · Corporate',dept:'Corporate',status:'active'},
+      {id:'p3',name:'Jonah Price',title:'Billing Analyst',dept:'Finance',status:'left',last:'2026-05-30',manager:'CFO: Alan Moore'},
+      {id:'p4',name:'Alan Moore',title:'CFO',dept:'Finance',status:'active'},
+      {id:'p5',name:'Sofia Reyes',title:'Senior Associate · Litigation',dept:'Litigation',status:'active'},
+      {id:'p6',name:'Daniel Krug',title:'Knowledge Management Director',dept:'KM',status:'active'},
+      {id:'p7',name:'Lena Fischer',title:'Associate · Frankfurt',dept:'Corporate (EU)',status:'left',last:'2026-09-19',manager:'Rebecca Lin'},
+      {id:'p8',name:'Office of General Counsel (Nora Whitfield)',title:'Firm GC',dept:'OGC',status:'active'},
+      {id:'p9',name:'Firm AI service identity',title:'svc-legal-ai@wg',dept:'IT',status:'active',svc:true},
+    ],
+    agents:[
+      A({id:'l1',name:'Harvey Assistant (firm-wide)',platform:'Harvey',kind:'vendor',owner:'p6',dept:'KM',purpose:'Research, drafting, and document Q&A for 540 lawyers; matter-isolated workspaces.',dataClasses:['Privileged','Client-confidential'],actions:['read','write'],systems:['iManage (matter-scoped)'],credentials:[{type:'svc',issuedTo:'p9',label:'SSO + iManage app'}],matterScoped:true,costMo:96000,runs30d:38000,lastReview:'2026-09-15',nextReview:'2026-12-15',approvals:{gc:true,security:true,risk:true},scopesGranted:3,scopesUsed:3,logs:true}),
+      A({id:'l2',name:'Project Falcon Diligence Agent',platform:'Harvey',kind:'vendor',owner:'p1',dept:'Corporate',purpose:'Reviews the Falcon data room (Client: Orion Industrial) and produces issue lists for the deal team.',dataClasses:['Privileged','Client-confidential','MNPI'],actions:['read','write'],systems:['Harvey workspace: Falcon','Datasite data room'],credentials:[{type:'oauth',issuedTo:'p1',label:'Datasite OAuth (Marcus)'}],matterScoped:true,client:'Orion Industrial',ocg:'Client OCG requires written consent for any gen-AI use on its matters (on file: yes)',costMo:4200,runs30d:900,lastReview:'2026-10-02',nextReview:'2027-01-02',approvals:{gc:true,security:true,clientConsent:true},scopesGranted:2,scopesUsed:2,logs:true}),
+      A({id:'l3',name:'Tabular Contract Review',platform:'Legora',kind:'vendor',owner:'p2',dept:'Corporate',purpose:'Extracts terms across hundreds of contracts into review tables; EU data residency for Frankfurt matters.',dataClasses:['Privileged','Client-confidential'],actions:['read','write'],systems:['iManage (matter-scoped)'],credentials:[{type:'svc',issuedTo:'p9',label:'SSO'}],matterScoped:true,costMo:31000,runs30d:6200,lastReview:'2026-09-28',nextReview:'2026-12-28',approvals:{gc:true,security:true},scopesGranted:2,scopesUsed:2,logs:true}),
+      A({id:'l4',name:'Deposition Summarizer',platform:'CoCounsel',kind:'vendor',owner:'p5',dept:'Litigation',purpose:'Summarizes transcripts and builds chronologies for litigation teams.',dataClasses:['Privileged','Client-confidential'],actions:['read','write'],systems:['Relativity','iManage'],credentials:[{type:'svc',issuedTo:'p9',label:'SSO'}],matterScoped:true,costMo:18000,runs30d:1400,lastReview:'2026-08-20',nextReview:'2026-11-20',approvals:{gc:true,security:true},scopesGranted:2,scopesUsed:2,logs:true}),
+      A({id:'l5',name:'Precedent Finder (Copilot over iManage)',platform:'Microsoft Copilot',owner:'p6',dept:'KM',purpose:'Finds similar clauses and precedents across the firm document store.',dataClasses:['Privileged','Client-confidential'],actions:['read'],systems:['iManage (firm-wide index)','SharePoint'],credentials:[{type:'entra',issuedTo:'p9',label:'Graph connector'}],matterScoped:false,costMo:5400,runs30d:9800,lastReview:'2026-07-01',nextReview:'2026-10-01',approvals:{security:true},scopesGranted:1,scopesUsed:1,logs:true,wallRisk:'Index spans matters on both sides of 4 active ethical walls'}),
+      A({id:'l6',name:'Billing Narrative Rewriter',platform:'Zapier',owner:'p3',dept:'Finance',purpose:'Rewrites timekeeper narratives on prebills into client-compliant language before invoicing.',dataClasses:['Privileged','Client-confidential'],actions:['read','write'],systems:['Aderant prebills','OpenAI API'],credentials:[{type:'consumer',issuedTo:'p3',label:'OpenAI API key (personal account, jonah.price@outlook)'},{type:'oauth',issuedTo:'p3',label:'Aderant OAuth (Jonah)'}],matterScoped:false,costMo:90,runs30d:1900,lastReview:null,nextReview:null,approvals:{},scopesGranted:0,scopesUsed:0,logs:false}),
+      A({id:'l7',name:'Conflicts Pre-Screener',platform:'OpenAI',owner:'p8',dept:'OGC',purpose:'Pre-reads new-matter intake forms and suggests likely conflicts for the conflicts team.',dataClasses:['Client-confidential','PII'],actions:['read','write'],systems:['Intapp Intake'],credentials:[{type:'apikey',issuedTo:'p9',label:'OpenAI enterprise key'}],matterScoped:true,costMo:700,runs30d:620,lastReview:'2026-09-30',nextReview:'2026-12-30',approvals:{gc:true,security:true},scopesGranted:2,scopesUsed:2,logs:true}),
+      A({id:'l8',name:'Engagement Letter Drafter',platform:'Harvey',kind:'vendor',owner:'p1',dept:'Corporate',purpose:'Drafts engagement letters from intake data using the firm template.',dataClasses:['Client-confidential'],actions:['read','write','commit-contract'],systems:['Intapp','iManage'],credentials:[{type:'svc',issuedTo:'p9',label:'SSO'}],matterScoped:true,costMo:0,runs30d:60,lastReview:'2026-10-02',nextReview:'2027-01-02',approvals:{gc:true},authority:{signer:'Nora Whitfield (GC)',limit:'Draft only; partner signature required to send',date:'2026-04-10',hash:'c41a…9e0b'},scopesGranted:2,scopesUsed:2,logs:true}),
+      A({id:'l9',name:'Docket Monitor',platform:'n8n',owner:'p5',dept:'Litigation',purpose:'Polls PACER and state dockets for filings in active matters and alerts the team.',dataClasses:['Client-confidential'],actions:['read','send-external'],systems:['PACER','Outlook'],credentials:[{type:'apikey',issuedTo:'p5',label:'PACER (Sofia)'},{type:'oauth',issuedTo:'p5',label:'M365 (Sofia)'}],matterScoped:true,costMo:120,runs30d:2600,lastReview:'2026-09-05',nextReview:'2026-12-05',approvals:{security:true},scopesGranted:3,scopesUsed:3,logs:true}),
+      A({id:'l10',name:'Client Alert Writer',platform:'OpenAI',owner:'p6',dept:'Marketing',purpose:'Drafts client alerts on new rulings; reviewed by partners before publishing.',dataClasses:[],actions:['write'],systems:['CMS'],credentials:[{type:'apikey',issuedTo:'p9',label:'OpenAI enterprise key'}],costMo:150,runs30d:40,lastReview:'2026-10-10',nextReview:'2027-01-10',approvals:{},scopesGranted:1,scopesUsed:1,logs:true}),
+      A({id:'l11',name:'Frankfurt Translation Agent',platform:'OpenAI',owner:'p7',dept:'Corporate (EU)',purpose:'Translates German contracts and correspondence to English for US deal teams.',dataClasses:['Privileged','Client-confidential'],actions:['read','write'],systems:['iManage (Frankfurt)','OpenAI API (US region)'],credentials:[{type:'apikey',issuedTo:'p7',label:'OpenAI key (Lena)'}],matterScoped:false,costMo:260,runs30d:380,lastReview:null,nextReview:null,approvals:{},scopesGranted:0,scopesUsed:0,logs:false,euData:true}),
+      A({id:'l12',name:'Falcon Closing Checklist Agent',platform:'Zapier',owner:'p1',dept:'Corporate',purpose:'Tracks closing deliverables for Project Falcon and nudges counterparties by email.',dataClasses:['Client-confidential','MNPI'],actions:['read','send-external'],systems:['Smartsheet','Outlook (sends as Marcus)'],credentials:[{type:'oauth',issuedTo:'p1',label:'M365 (Marcus)'},{type:'oauth',issuedTo:'p1',label:'Smartsheet (Marcus)'}],matterScoped:true,client:'Orion Industrial',costMo:40,runs30d:210,lastReview:null,nextReview:null,approvals:{},scopesGranted:0,scopesUsed:0,logs:false}),
+    ],
+    regs:[
+      {id:'aba512',name:'ABA Formal Opinion 512 (Model Rules 1.1, 1.4, 1.5, 1.6, 5.1, 5.3)',why:'Lawyers must understand the tools they use, protect client confidences (including what the vendor retains), supervise non-lawyer and AI assistance, and set firm policies on permissible use.',controls:[
+        {id:'conf',name:'Confidential data only on enterprise terms (no personal/consumer accounts)',test:a=>(a.dataClasses.includes('Privileged')||a.dataClasses.includes('Client-confidential'))?(a.credentials.some(c=>c.type==='consumer')?'fail':'pass'):'na'},
+        {id:'sup',name:'Named supervising lawyer or director (Rules 5.1/5.3)',test:a=>ownerOk(a)?'pass':'fail'},
+        {id:'policy',name:'Approved by OGC where privileged data is processed',test:a=>a.dataClasses.includes('Privileged')?(a.approvals.gc?'pass':'fail'):'na'},
+      ]},
+      {id:'walls',name:'Ethical walls and matter-level isolation',why:'Agents that index or read across matters can breach screens the firm has promised clients and courts.',controls:[
+        {id:'iso',name:'Agents touching privileged data are matter-scoped',test:a=>a.dataClasses.includes('Privileged')?(a.matterScoped?'pass':'fail'):'na'},
+        {id:'wall',name:'No agent spans an active ethical wall',test:a=>a.wallRisk?'fail':'pass'},
+      ]},
+      {id:'ocg',name:'Client outside counsel guidelines',why:'Many OCGs prohibit or condition generative-AI use on client matters; consent must be on file before an agent touches the matter.',controls:[
+        {id:'consent',name:'Client consent recorded where OCG requires it',test:a=>a.client?(a.approvals.clientConsent?'pass':'fail'):'na'},
+      ]},
+      {id:'euai',name:'EU AI Act Art. 50 transparency (from Aug 2, 2026) and GDPR for EU offices',why:'EU-office agents must disclose AI interaction where applicable and keep EU client data under appropriate transfer terms. High-risk obligations deferred to Dec 2027 by the Digital Omnibus.',controls:[
+        {id:'eu',name:'EU-origin data processed under appropriate transfer terms',test:a=>a.euData?((a.credentials.every(c=>c.type==='svc'||c.type==='entra'))?'pass':'fail'):'na'},
+      ]},
+      {id:'records',name:'Departure protocol (lateral moves)',why:'When a lawyer leaves, matter files move under client instruction; agents bound to those matters, and credentials issued to the lawyer, must be transferred or retired the same day.',controls:[
+        {id:'term',name:'No credential belongs to a departed lawyer or staff member',test:a=>credDeparted(a)?'fail':'pass'},
+      ]},
+    ],
+    extras:[
+      'Client notification: Orion Industrial and 2 other clients must be told which agents processed their matters and where outputs are retained (OCG clause 7.3)',
+      'Ethical wall: screen Marcus from Project Falcon workspace effective today; confirm Harvey and Datasite access removed before his last day, not after',
+      'Records: place litigation hold on agent prompt/output logs for Falcon matter; export to the client’s successor counsel on instruction',
+      'Outlook: agents that send as marcus.hale@ must be rebound before mailbox conversion to shared',
+    ],
+    incidents:[
+      {date:'2026-10-08',agent:'l5',sev:'high',title:'Precedent Finder surfaced a clause from a walled matter to an associate on the other side of the screen',status:'OGC review · index re-scope pending',owner:'p6'},
+      {date:'2026-07-22',agent:'l6',sev:'medium',title:'Prebill narratives (with client names and matter descriptions) sent to a personal OpenAI account',status:'Open · owner departed',owner:'p4'},
+    ],
+    onboardPresets:{name:'Lease Abstraction Agent',purpose:'Abstracts commercial leases into a summary table for real-estate diligence; matter-scoped.',platform:'Legora',dept:'Real Estate',dataClasses:['Privileged','Client-confidential'],actions:['read','write'],systems:['iManage (matter-scoped)'],cost:3500},
+  },
+
+  finance: {
+    name:'Northbridge Capital', industry:'Asset manager & broker-dealer', meta:'$84B AUM · 2,400 employees · FINRA member · Workday + Okta',
+    conn:'Workday · Okta · Hebbia · Rogo · Bloomberg · Microsoft Copilot · OpenAI Enterprise · Anthropic · Salesforce FSC · Zapier · n8n · GitHub · Global Relay',
+    turnover:'FINRA’s 2026 Oversight Report discusses AI-agent risks for the first time and points to Rule 3110 supervision, 2210 communications, and 4511/17a-4 records. Bank regulators carved generative and agentic AI out of SR 11-7 (now SR 26-2, May 2026), so firms need a separate governance basis for agents.',
+    people:[
+      {id:'p1',name:'Raj Patel',title:'Senior Research Analyst',dept:'Equity Research',status:'leaving',last:'2026-11-06',manager:'Head of Research: Claire Dunn',event:'termination',note:'Resigned to join a competitor; Form U5 due within 30 days'},
+      {id:'p2',name:'Claire Dunn',title:'Head of Research',dept:'Equity Research',status:'active'},
+      {id:'p3',name:'Omar Haddad',title:'Client Service Associate',dept:'Wealth',status:'left',last:'2026-07-03',manager:'Grace Kim (Head of Wealth)'},
+      {id:'p4',name:'Grace Kim',title:'Head of Wealth',dept:'Wealth',status:'active'},
+      {id:'p5',name:'Compliance (Victor Alonso)',title:'Chief Compliance Officer',dept:'Compliance',status:'active'},
+      {id:'p6',name:'Maya Lindqvist',title:'Quant Developer',dept:'Technology',status:'transfer',last:'2026-11-10',manager:'CTO',event:'transfer',to:'Risk Technology'},
+      {id:'p7',name:'Ben Carter',title:'Marketing Manager',dept:'Marketing',status:'left',last:'2026-08-29',manager:'CMO'},
+      {id:'p8',name:'Research service identity',title:'svc-research-ai@northbridge',dept:'IT',status:'active',svc:true},
+    ],
+    agents:[
+      A({id:'f1',name:'Data Room Diligence Agent',platform:'Hebbia',kind:'vendor',owner:'p2',dept:'Private Markets',purpose:'Reads deal data rooms and answers diligence questions with citations.',dataClasses:['MNPI','Client-confidential'],actions:['read'],systems:['Intralinks','SharePoint'],credentials:[{type:'svc',issuedTo:'p8',label:'SSO'}],costMo:42000,runs30d:5100,lastReview:'2026-09-18',nextReview:'2026-12-18',approvals:{compliance:true,security:true},scopesGranted:2,scopesUsed:2,logs:true}),
+      A({id:'f2',name:'Earnings Call Analyst',platform:'Rogo',kind:'vendor',owner:'p1',dept:'Equity Research',purpose:'Summarizes earnings calls and builds comp tables for coverage names.',dataClasses:['Public'],actions:['read','write'],systems:['Transcripts','Excel'],credentials:[{type:'license',issuedTo:'p1',label:'Rogo seat (Raj)'}],costMo:1800,runs30d:260,lastReview:'2026-09-01',nextReview:'2026-12-01',approvals:{compliance:true},scopesGranted:2,scopesUsed:2,logs:true}),
+      A({id:'f3',name:'Research Note Summarizer',platform:'OpenAI',owner:'p1',dept:'Equity Research',purpose:'Pulls Bloomberg news and broker notes, summarizes into the morning sheet.',dataClasses:['Licensed data'],actions:['read','write'],systems:['Bloomberg Terminal (BLPAPI)','Outlook'],credentials:[{type:'license',issuedTo:'p1',label:'Bloomberg terminal login (Raj) — named user license'},{type:'apikey',issuedTo:'p8',label:'OpenAI enterprise key'}],costMo:900,runs30d:640,lastReview:'2026-08-11',nextReview:'2026-11-11',approvals:{security:true},scopesGranted:3,scopesUsed:3,logs:true,licenseRisk:'Bloomberg terminal data accessed by an automated process under a named-user license'}),
+      A({id:'f4',name:'Client Email Drafter',platform:'Microsoft Copilot',owner:'p4',dept:'Wealth',purpose:'Drafts client emails and meeting follow-ups for advisors.',dataClasses:['PII','Client-confidential'],actions:['read','write','customer-facing'],systems:['Salesforce FSC','Outlook'],credentials:[{type:'entra',issuedTo:'p8',label:'Entra app'}],costMo:6000,runs30d:3300,lastReview:'2026-10-03',nextReview:'2027-01-03',approvals:{compliance:true,principalReview:true,security:true},scopesGranted:3,scopesUsed:3,logs:true,archived:true}),
+      A({id:'f5',name:'Trade Surveillance Triage',platform:'Anthropic',owner:'p5',dept:'Compliance',purpose:'Ranks surveillance alerts and drafts the first-pass narrative for analysts.',dataClasses:['MNPI','PII'],actions:['read','write'],systems:['Nasdaq SMARTS','Case manager'],credentials:[{type:'apikey',issuedTo:'p8',label:'Anthropic enterprise key'}],costMo:2400,runs30d:4800,lastReview:'2026-09-22',nextReview:'2026-12-22',approvals:{compliance:true,security:true},scopesGranted:2,scopesUsed:2,logs:true}),
+      A({id:'f6',name:'KYC Refresh Agent',platform:'Zapier',owner:'p3',dept:'Wealth',purpose:'Emails clients for periodic KYC updates and files responses to the CRM.',dataClasses:['PII'],actions:['read','write','customer-facing','send-external'],systems:['Salesforce FSC','Outlook (sends as Omar)','DocuSign'],credentials:[{type:'oauth',issuedTo:'p3',label:'M365 (Omar)'},{type:'oauth',issuedTo:'p3',label:'Salesforce (Omar)'}],costMo:60,runs30d:410,lastReview:null,nextReview:null,approvals:{},scopesGranted:0,scopesUsed:0,logs:false,archived:false}),
+      A({id:'f7',name:'Fund Commentary Writer',platform:'OpenAI',owner:'p7',dept:'Marketing',purpose:'Drafts quarterly fund performance commentary for factsheets.',dataClasses:['Public'],actions:['write','customer-facing'],systems:['Performance DB','CMS'],credentials:[{type:'apikey',issuedTo:'p7',label:'OpenAI key (Ben)'}],costMo:180,runs30d:30,lastReview:null,nextReview:null,approvals:{},scopesGranted:0,scopesUsed:0,logs:false,archived:false}),
+      A({id:'f8',name:'Rebalance Suggester',platform:'Anthropic',owner:'p6',dept:'Technology',purpose:'Suggests portfolio rebalances against model weights; PM must approve before any order.',dataClasses:['Client-confidential'],actions:['read','write'],systems:['OMS (read)','Aladdin'],credentials:[{type:'apikey',issuedTo:'p6',label:'Anthropic key (Maya)'},{type:'apikey',issuedTo:'p6',label:'OMS read token (Maya)'}],costMo:1100,runs30d:800,lastReview:'2026-08-30',nextReview:'2026-11-30',approvals:{compliance:true,security:true},authority:{signer:'CIO',limit:'Suggest only; no order placement',date:'2026-03-02',hash:'7be2…41cc'},scopesGranted:3,scopesUsed:2,logs:true}),
+      A({id:'f9',name:'Expense Report Auditor',platform:'n8n',owner:'p5',dept:'Finance',purpose:'Flags policy exceptions in expense reports before approval.',dataClasses:['PII','Financial'],actions:['read'],systems:['Concur'],credentials:[{type:'apikey',issuedTo:'p8',label:'Concur API'}],costMo:40,runs30d:1200,lastReview:'2026-10-12',nextReview:'2027-01-12',approvals:{security:true},scopesGranted:1,scopesUsed:1,logs:true}),
+      A({id:'f10',name:'Code Review Agent',platform:'CodeRabbit',kind:'vendor',owner:'p6',dept:'Technology',purpose:'Reviews pull requests in the trading-systems repos.',dataClasses:['Source code'],actions:['read','write'],systems:['GitHub (org)'],credentials:[{type:'pat',issuedTo:'p6',label:'GitHub PAT (Maya, no expiry)'}],costMo:2200,runs30d:900,lastReview:'2026-09-14',nextReview:'2026-12-14',approvals:{security:true},scopesGranted:4,scopesUsed:2,logs:true}),
+      A({id:'f11',name:'Pitchbook Generator',platform:'OpenAI',owner:'p1',dept:'Equity Research',purpose:'Builds first-draft pitchbooks from research notes and comps.',dataClasses:['MNPI'],actions:['read','write'],systems:['Research DB','PowerPoint'],credentials:[{type:'apikey',issuedTo:'p1',label:'OpenAI key (Raj) — created outside the enterprise org'}],costMo:320,runs30d:70,lastReview:null,nextReview:null,approvals:{},scopesGranted:0,scopesUsed:0,logs:false}),
+      A({id:'f12',name:'Client Call Transcriber',platform:'Microsoft Copilot',owner:'p4',dept:'Wealth',purpose:'Transcribes advisor-client calls and files notes to the CRM.',dataClasses:['PII','Client-confidential'],actions:['read','write'],systems:['Teams','Salesforce FSC'],credentials:[{type:'entra',issuedTo:'p8',label:'Entra app'}],costMo:3100,runs30d:2100,lastReview:'2026-07-20',nextReview:'2026-10-20',approvals:{compliance:true,security:true},scopesGranted:2,scopesUsed:2,logs:true,archived:true}),
+    ],
+    regs:[
+      {id:'f3110',name:'FINRA Rule 3110 — Supervision',why:'Firms must supervise systems the same way they supervise people. The 2026 Oversight Report points to monitoring agent access and data handling, human-in-the-loop oversight, and action tracking.',controls:[
+        {id:'owner',name:'Every agent has a named supervising principal or owner',test:a=>ownerOk(a)?'pass':'fail'},
+        {id:'review',name:'Tested and reviewed within 90 days',test:a=>reviewOk(a)?'pass':'fail'},
+        {id:'term',name:'No credentials belong to departed associated persons',test:a=>credDeparted(a)?'fail':'pass'},
+      ]},
+      {id:'f2210',name:'FINRA Rule 2210 / SEC Marketing Rule — Communications',why:'Client-facing and marketing content produced by agents must get principal review before use, like any other communication.',controls:[
+        {id:'pr',name:'Customer-facing output goes through principal review',test:a=>a.actions.includes('customer-facing')?(a.approvals.principalReview?'pass':'fail'):'na'},
+      ]},
+      {id:'f17a4',name:'Rule 4511 / SEA 17a-4 — Books and records',why:'Prompts and outputs that constitute business communications must be retained in WORM-compliant archives (Global Relay).',controls:[
+        {id:'arch',name:'Customer-facing agent prompt/output logs archived',test:a=>a.actions.includes('customer-facing')?(a.archived?'pass':'fail'):'na'},
+      ]},
+      {id:'mnpi',name:'Information barriers / MNPI handling',why:'Agents that read MNPI must be approved by Compliance and run on enterprise credentials with logging.',controls:[
+        {id:'mnpi',name:'MNPI agents approved by Compliance and logged',test:a=>a.dataClasses.includes('MNPI')?((a.approvals.compliance&&a.logs)?'pass':'fail'):'na'},
+        {id:'ent',name:'MNPI never flows through a credential created outside the enterprise org',test:a=>a.dataClasses.includes('MNPI')?(a.credentials.some(c=>c.type==='consumer'||(c.type==='apikey'&&c.label.includes('outside')))?'fail':'pass'):'na'},
+      ]},
+      {id:'sr262',name:'SR 26-2 model risk (gen/agentic AI carved out) — internal AI governance standard',why:'Because SR 11-7-style model validation no longer covers agents, the firm’s own standard requires an inventory, a named owner, documented authority limits, and periodic review.',controls:[
+        {id:'auth',name:'Agents that can act on portfolios or clients have a signed authority limit',test:a=>(a.actions.includes('money')||a.systems.some(s=>/OMS|Aladdin/.test(s)))?(a.authority?'pass':'fail'):'na'},
+      ]},
+      {id:'lic',name:'Data license compliance (Bloomberg, broker research)',why:'Named-user terminal licenses prohibit automated redistribution; agents pulling terminal data need an enterprise data license.',controls:[
+        {id:'lic',name:'No agent uses a named-user terminal login',test:a=>a.licenseRisk?'fail':'pass'},
+      ]},
+    ],
+    extras:[
+      'Form U5: file within 30 days; attach agent access summary to the departure file',
+      'Bloomberg: terminal login is a named-user license; any agent using it must move to an enterprise data license or be retired, not reassigned',
+      'Global Relay: confirm Raj’s agent outputs are captured in the archive before the mailbox is closed; apply 6-year retention',
+      'Information barriers: revoke research-side credentials the same day; confirm no agent carries MNPI to the departing analyst’s personal devices',
+    ],
+    incidents:[
+      {date:'2026-10-14',agent:'f6',sev:'high',title:'KYC Refresh Agent emailed 212 clients from a departed associate’s mailbox; emails not captured in Global Relay',status:'Compliance investigation open',owner:'p5'},
+      {date:'2026-09-11',agent:'f7',sev:'medium',title:'Fund commentary published with a performance figure that had not passed principal review',status:'Closed · corrected factsheet issued',owner:'p5'},
+    ],
+    onboardPresets:{name:'Client Onboarding Document Collector',purpose:'Requests and classifies account-opening documents from new wealth clients; files to Salesforce.',platform:'Zapier',dept:'Wealth',dataClasses:['PII'],actions:['read','write','customer-facing','send-external'],systems:['Salesforce FSC','Outlook','DocuSign'],cost:120},
+  },
+
+  cx: {
+    name:'Northwind Telecom', industry:'Enterprise customer service', meta:'4.1M subscribers · 9,000 employees · 2,400 contact-center seats · Workday + Okta',
+    conn:'Workday · Okta · Sierra · Parloa · Cresta · Retell · Zendesk · Salesforce Service Cloud · OpenAI · n8n · Zapier · Twilio',
+    turnover:'42% of contact centers report annual agent turnover above 50% (ICMI 2026). Team leads build automations on their own admin tokens and leave within a year. Air Canada v. Moffatt (2024) established that a company is liable for what its chatbot tells customers.',
+    people:[
+      {id:'p1',name:'Jenna Park',title:'Team Lead · Billing Support',dept:'Customer Care',status:'leaving',last:'2026-10-30',manager:'Director of Care: Luis Ortega',event:'termination'},
+      {id:'p2',name:'Luis Ortega',title:'Director of Customer Care',dept:'Customer Care',status:'active'},
+      {id:'p3',name:'Derek Hoyt',title:'CX Automation Specialist',dept:'CX Ops',status:'left',last:'2026-04-18',manager:'VP CX: Anita Rao'},
+      {id:'p4',name:'Anita Rao',title:'VP Customer Experience',dept:'CX',status:'active'},
+      {id:'p5',name:'Legal & Privacy (Sam Oduya)',title:'Privacy Counsel',dept:'Legal',status:'active'},
+      {id:'p6',name:'Chloe Martin',title:'Workforce Management Analyst',dept:'WFM',status:'active'},
+      {id:'p7',name:'Finance (Elena Ruiz)',title:'CFO',dept:'Finance',status:'active'},
+      {id:'p8',name:'Nate Brooks',title:'Social Media Manager',dept:'Marketing',status:'left',last:'2026-09-26',manager:'CMO'},
+      {id:'p9',name:'CX service identity',title:'svc-cx-ai@northwind',dept:'IT',status:'active',svc:true},
+    ],
+    agents:[
+      A({id:'c1',name:'Customer Service Agent (chat & app)',platform:'Sierra',kind:'vendor',owner:'p4',dept:'CX',purpose:'Handles 61% of chat contacts end-to-end: plan changes, outages, billing questions.',dataClasses:['PII','PCI'],actions:['read','write','customer-facing','commit-contract'],systems:['Salesforce Service Cloud','Billing API (plan change)'],credentials:[{type:'svc',issuedTo:'p9',label:'Service identity'}],costMo:210000,runs30d:412000,lastReview:'2026-10-01',nextReview:'2027-01-01',approvals:{legal:true,security:true,finance:true},authority:{signer:'Anita Rao (VP CX) + Elena Ruiz (CFO)',limit:'Plan changes up to $50/mo delta; credits up to $25; no cancellations',date:'2026-06-15',hash:'a9d3…77f1'},scopesGranted:6,scopesUsed:6,logs:true,disclosure:true}),
+      A({id:'c2',name:'Inbound Voice Agent',platform:'Parloa',kind:'vendor',owner:'p4',dept:'CX',purpose:'Answers the main line, authenticates callers, resolves outage and order-status calls.',dataClasses:['PII'],actions:['read','customer-facing'],systems:['Telephony','Salesforce (read)'],credentials:[{type:'svc',issuedTo:'p9',label:'Service identity'}],costMo:84000,runs30d:188000,lastReview:'2026-09-12',nextReview:'2026-12-12',approvals:{legal:true,security:true},scopesGranted:3,scopesUsed:3,logs:true,disclosure:true}),
+      A({id:'c3',name:'Agent Assist (human agents)',platform:'Cresta',kind:'vendor',owner:'p2',dept:'Customer Care',purpose:'Real-time guidance and after-call summaries for 2,400 human agents.',dataClasses:['PII'],actions:['read','write'],systems:['Telephony','Zendesk'],credentials:[{type:'svc',issuedTo:'p9',label:'Service identity'}],costMo:96000,runs30d:530000,lastReview:'2026-08-25',nextReview:'2026-11-25',approvals:{security:true},scopesGranted:3,scopesUsed:3,logs:true}),
+      A({id:'c4',name:'Refund Decision Agent',platform:'n8n',owner:'p1',dept:'Customer Care',purpose:'Reads the ticket and billing history, decides and issues refunds up to $200 without a human.',dataClasses:['PII','Financial'],actions:['read','write','money','customer-facing'],systems:['Zendesk (admin)','Billing API (credit)'],credentials:[{type:'apikey',issuedTo:'p1',label:'Zendesk admin token (Jenna)'},{type:'apikey',issuedTo:'p1',label:'Billing API key (Jenna)'}],costMo:150,runs30d:9400,lastReview:null,nextReview:null,approvals:{},authority:null,scopesGranted:0,scopesUsed:0,logs:false,disclosure:false,incidents30d:1}),
+      A({id:'c5',name:'Churn Save Offer Agent',platform:'OpenAI',owner:'p1',dept:'Customer Care',purpose:'Generates retention offers for customers who ask to cancel; offers go to the human agent.',dataClasses:['PII'],actions:['read','write'],systems:['Salesforce','Offer catalog'],credentials:[{type:'apikey',issuedTo:'p1',label:'OpenAI key (Jenna)'}],costMo:420,runs30d:7100,lastReview:'2026-07-15',nextReview:'2026-10-15',approvals:{finance:true},scopesGranted:2,scopesUsed:2,logs:true}),
+      A({id:'c6',name:'Outbound Collections Caller',platform:'Retell',kind:'vendor',owner:'p3',dept:'Collections',purpose:'Calls customers 15+ days past due, offers payment plans, takes card payments.',dataClasses:['PII','PCI'],actions:['read','customer-facing','send-external','money'],systems:['Telephony','Payment gateway'],credentials:[{type:'apikey',issuedTo:'p3',label:'Retell key (Derek)'},{type:'apikey',issuedTo:'p3',label:'Payment gateway key (Derek)'}],costMo:3800,runs30d:28000,lastReview:null,nextReview:null,approvals:{},authority:null,scopesGranted:0,scopesUsed:0,logs:false,disclosure:false,tcpa:false}),
+      A({id:'c7',name:'Order Status Bot',platform:'Zendesk',kind:'vendor',owner:'p2',dept:'Customer Care',purpose:'Answers order and shipping status in chat.',dataClasses:['PII'],actions:['read','customer-facing'],systems:['Zendesk','OMS'],credentials:[{type:'svc',issuedTo:'p9',label:'Service identity'}],costMo:2500,runs30d:61000,lastReview:'2026-09-30',nextReview:'2026-12-30',approvals:{legal:true,security:true},scopesGranted:2,scopesUsed:2,logs:true,disclosure:true}),
+      A({id:'c8',name:'Knowledge Base Updater',platform:'OpenAI',owner:'p3',dept:'CX Ops',purpose:'Rewrites help-center articles from policy change tickets and publishes them.',dataClasses:[],actions:['write','customer-facing'],systems:['Zendesk Guide (publish)'],credentials:[{type:'oauth',issuedTo:'p3',label:'Zendesk OAuth (Derek)'}],costMo:90,runs30d:180,lastReview:null,nextReview:null,approvals:{},scopesGranted:0,scopesUsed:0,logs:false,disclosure:false}),
+      A({id:'c9',name:'QA Scorer (human agent performance)',platform:'Cresta',kind:'vendor',owner:'p6',dept:'WFM',purpose:'Scores 100% of human-agent calls; scores feed coaching and quarterly bonus decisions.',dataClasses:['PII','Employee data'],actions:['read','employment-decision'],systems:['Telephony','UKG'],credentials:[{type:'svc',issuedTo:'p9',label:'Service identity'}],costMo:0,runs30d:530000,lastReview:'2026-10-08',nextReview:'2027-01-08',approvals:{security:true},scopesGranted:2,scopesUsed:2,logs:true,hrApproved:false}),
+      A({id:'c10',name:'Workforce Scheduling Agent',platform:'Copilot Studio',owner:'p6',dept:'WFM',purpose:'Builds weekly schedules from forecast and agent preferences.',dataClasses:['Employee data'],actions:['read','write'],systems:['UKG','Forecast DB'],credentials:[{type:'entra',issuedTo:'p9',label:'Entra app'}],costMo:700,runs30d:40,lastReview:'2026-10-02',nextReview:'2027-01-02',approvals:{security:true},scopesGranted:2,scopesUsed:2,logs:true}),
+      A({id:'c11',name:'Social Media Responder',platform:'Zapier',owner:'p8',dept:'Marketing',purpose:'Replies to @mentions on X and Instagram with templated answers and routes complaints.',dataClasses:['PII'],actions:['customer-facing','send-external'],systems:['X API','Instagram API','Zendesk'],credentials:[{type:'oauth',issuedTo:'p8',label:'X (Nate)'},{type:'oauth',issuedTo:'p8',label:'Instagram (Nate)'}],costMo:30,runs30d:2200,lastReview:null,nextReview:null,approvals:{},scopesGranted:0,scopesUsed:0,logs:false,disclosure:false}),
+      A({id:'c12',name:'Chargeback Dispute Writer',platform:'Anthropic',owner:'p7',dept:'Finance',purpose:'Assembles evidence and drafts chargeback responses to card networks.',dataClasses:['PII','PCI','Financial'],actions:['read','write'],systems:['Payment gateway','Zendesk'],credentials:[{type:'apikey',issuedTo:'p9',label:'Anthropic enterprise key'}],costMo:600,runs30d:900,lastReview:'2026-09-20',nextReview:'2026-12-20',approvals:{finance:true,security:true},scopesGranted:2,scopesUsed:2,logs:true}),
+      A({id:'c13',name:'Escalation Router',platform:'n8n',owner:'p2',dept:'Customer Care',purpose:'Classifies tickets and routes to the right queue; flags legal threats to Legal.',dataClasses:['PII'],actions:['read','write'],systems:['Zendesk'],credentials:[{type:'apikey',issuedTo:'p9',label:'Zendesk API (service)'}],costMo:110,runs30d:81000,lastReview:'2026-10-11',nextReview:'2027-01-11',approvals:{security:true},scopesGranted:1,scopesUsed:1,logs:true}),
+    ],
+    regs:[
+      {id:'ftc',name:'FTC Act §5 / state UDAP — accuracy of customer-facing statements',why:'Air Canada v. Moffatt (2024): the company is bound by what its chatbot tells customers. Customer-facing agents need an owner, logs, and a review cadence.',controls:[
+        {id:'owner',name:'Customer-facing agents have a named owner',test:a=>a.actions.includes('customer-facing')?(ownerOk(a)?'pass':'fail'):'na'},
+        {id:'logs',name:'Customer-facing conversations logged',test:a=>a.actions.includes('customer-facing')?(a.logs?'pass':'fail'):'na'},
+        {id:'review',name:'Reviewed within 90 days',test:a=>a.actions.includes('customer-facing')?(reviewOk(a)?'pass':'fail'):'na'},
+      ]},
+      {id:'bot',name:'Bot disclosure laws (CA BOT Act, Utah AI Policy Act, EU AI Act Art. 50 from Aug 2026)',why:'Customers must be told they are talking to an automated system where the law requires it.',controls:[
+        {id:'disc',name:'Customer-facing agents disclose automation',test:a=>a.actions.includes('customer-facing')?(a.disclosure?'pass':'fail'):'na'},
+      ]},
+      {id:'money',name:'Money and contract authority (internal delegation standard)',why:'An agent that issues credits, refunds, or changes a customer’s plan needs a signed delegation with a limit, co-signed by Finance.',controls:[
+        {id:'auth',name:'Money/contract actions have a signed authority limit',test:a=>(a.actions.includes('money')||a.actions.includes('commit-contract'))?(a.authority?'pass':'fail'):'na'},
+      ]},
+      {id:'tcpa',name:'TCPA / FDCPA — outbound calls and collections',why:'Automated outbound calls require prior express consent; collections calls carry FDCPA disclosure and timing rules.',controls:[
+        {id:'consent',name:'Outbound calling agents backed by documented consent',test:a=>(a.actions.includes('send-external')&&a.systems.some(s=>/Telephony/.test(s)))?((a.tcpa!==false)?'pass':'fail'):'na'},
+      ]},
+      {id:'pci',name:'PCI DSS 4.0',why:'Agents that touch card data must run on managed credentials with logging; no personal keys.',controls:[
+        {id:'pci',name:'PCI agents use managed credentials and log access',test:a=>a.dataClasses.includes('PCI')?((a.credentials.every(c=>c.type==='svc'||c.type==='entra'||c.issuedTo==='p9')&&a.logs)?'pass':'fail'):'na'},
+      ]},
+      {id:'aedt',name:'Automated employment decisions (Colorado AI Act, effective Jan 1, 2027 after SB 189; NYC Local Law 144)',why:'Agents whose output feeds pay, promotion, or discipline need HR approval, bias testing, and notice to employees.',controls:[
+        {id:'hr',name:'Employment-decision agents approved by HR with bias audit',test:a=>a.actions.includes('employment-decision')?(a.hrApproved?'pass':'fail'):'na'},
+      ]},
+      {id:'term',name:'Leaver protocol',why:'Team leads build on their own admin tokens; when they leave, the automation keeps the token.',controls:[
+        {id:'term',name:'No credential belongs to a departed employee',test:a=>credDeparted(a)?'fail':'pass'},
+      ]},
+    ],
+    extras:[
+      'Zendesk: Jenna’s admin token is used by 2 automations; rotate to a service token before her account is deactivated or the automations fail silently',
+      'Billing API: revoke Jenna’s key; Refund Decision Agent must pause until a signed authority limit exists',
+      'Finance: reconcile 9,400 refunds issued in the last 30 days under Jenna’s key against the $200 cap',
+    ],
+    incidents:[
+      {date:'2026-10-21',agent:'c4',sev:'high',title:'Refund Decision Agent issued a $708 credit on a $59 dispute; no human approval; no authority limit on file',status:'Finance review open',owner:'p7'},
+      {date:'2026-10-03',agent:'c6',sev:'high',title:'Collections caller reached 1,900 numbers on the internal do-not-call list; owner left in April',status:'Legal review · agent paused',owner:'p5'},
+      {date:'2026-08-14',agent:'c8',sev:'medium',title:'Help-center article published with a cancellation policy that does not exist',status:'Closed · article reverted',owner:'p2'},
+    ],
+    onboardPresets:{name:'Proactive Outage Notifier',purpose:'Texts affected subscribers during outages with ETA; replies route to the voice agent.',platform:'Twilio',dept:'CX',dataClasses:['PII'],actions:['read','customer-facing','send-external'],systems:['Network ops feed','Twilio','Salesforce'],cost:900},
+  },
+};
+
+/* ============================================================ POLICY ENGINE ============================================================ */
+let T = null; let tenantId = 'health';
+const person = id => T.people.find(p=>p.id===id);
+const pname = id => (person(id)||{}).name || '—';
+function ownerOk(a){ const p=person(a.owner); return !!p && p.status!=='left'; }
+function credDeparted(a){ return a.credentials.some(c=>{ const p=person(c.issuedTo); return p && p.status==='left'; }); }
+function reviewOk(a){ return a.nextReview && new Date(a.nextReview) >= TODAY; }
+function findings(a){
+  const f=[]; const push=(sev,text,rule)=>f.push({sev,text,rule});
+  const p=person(a.owner);
+  if(!p) push('critical','No accountable owner on record','owner');
+  else if(p.status==='left') push('critical',`Owner ${p.name} left on ${fmt(p.last)} (${daysAgo(p.last)} days ago); agent still running`,'owner');
+  else if(p.status==='leaving') push('high',`Owner ${p.name} leaves on ${fmt(p.last)}; decision needed before then`,'owner');
+  a.credentials.forEach(c=>{ const q=person(c.issuedTo); if(q&&q.status==='left') push('critical',`Credential "${c.label}" belongs to departed employee ${q.name}`,'cred'); if(c.type==='consumer') push('critical',`Runs on a personal consumer-tier account (${c.label}); no enterprise terms, no BAA/DPA, no logs`,'consumer'); if(c.type==='pat'&&/no expiry/.test(c.label)) push('medium',`Non-expiring personal access token (${c.label})`,'cred'); });
+  if(!a.nextReview) push('high','Never reviewed; no review scheduled','review'); else if(!reviewOk(a)) push('medium',`Review overdue since ${fmt(a.nextReview)}`,'review');
+  if((a.actions.includes('money')||a.actions.includes('commit-contract'))&&!a.authority) push('critical','Can move money or commit the company with no signed authority limit','authority');
+  if(a.scopesGranted>Math.max(2,a.scopesUsed*2)&&a.scopesGranted>0) push('medium',`Permission creep: ${a.scopesGranted} scopes granted, ${a.scopesUsed} used in 30 days`,'scope');
+  if(a.actions.includes('customer-facing')||a.actions.includes('patient-facing')){ if(!a.disclosure) push('medium','Customer/patient-facing without automation disclosure','disclosure'); if(!a.logs) push('high','Customer/patient-facing without conversation logs','logs'); }
+  if(a.incidents30d>0) push('high',`${a.incidents30d} incident(s) in the last 30 days`,'incident');
+  // tenant rules
+  if(tenantId==='health'){ if(a.dataClasses.includes('PHI')&&!a.baa) push('critical','Processes PHI with no business associate agreement (HIPAA)','baa'); if(a.actions.includes('patient-facing')&&!a.approvals.medicalDirector) push('high','Patient-facing without medical director sign-off','approval'); if(a.actions.includes('patient-facing')&&a.actions.includes('send-external')&&a.tcpa===false) push('high','Outbound patient SMS/calls with no documented consent (TCPA)','tcpa'); if(a.dataClasses.includes('PHI')&&!a.approvals.privacy) push('high','PHI access not approved by the Privacy Office','approval'); }
+  if(tenantId==='legal'){ if(a.dataClasses.includes('Privileged')&&a.matterScoped===false) push('high','Reads privileged data without matter-level isolation','iso'); if(a.wallRisk) push('critical',a.wallRisk,'wall'); if(a.dataClasses.includes('Privileged')&&!a.approvals.gc) push('high','Privileged data processed without OGC approval (Opinion 512, Rule 5.1)','approval'); if(a.client&&!a.approvals.clientConsent) push('high',`Client OCG consent not on file for ${a.client}`,'ocg'); if(a.euData&&a.credentials.some(c=>c.type!=='svc'&&c.type!=='entra')) push('high','EU client data sent to a US-region API on a personal key (GDPR transfer)','eu'); }
+  if(tenantId==='finance'){ if(a.actions.includes('customer-facing')&&!a.approvals.principalReview) push('high','Customer-facing output without principal review (FINRA 2210)','approval'); if(a.actions.includes('customer-facing')&&!a.archived) push('high','Customer communications not archived (17a-4)','records'); if(a.dataClasses.includes('MNPI')&&!a.approvals.compliance) push('critical','Handles MNPI without Compliance approval','approval'); if(a.licenseRisk) push('high',a.licenseRisk,'license'); if(a.systems.some(s=>/OMS|Aladdin/.test(s))&&!a.authority) push('high','Touches the OMS with no signed authority limit','authority'); }
+  if(tenantId==='cx'){ if(a.actions.includes('employment-decision')&&!a.hrApproved) push('high','Feeds employment decisions without HR approval or bias audit (Colorado AI Act / NYC LL144)','aedt'); if(a.dataClasses.includes('PCI')&&a.credentials.some(c=>c.issuedTo!=='p9')) push('high','Card-data access on a personal credential (PCI DSS)','pci'); if(a.actions.includes('send-external')&&a.systems.some(s=>/Telephony/.test(s))&&a.tcpa===false) push('critical','Outbound automated calls with no consent basis (TCPA)','tcpa'); }
+  const rank={critical:0,high:1,medium:2}; f.sort((x,y)=>rank[x.sev]-rank[y.sev]);
+  return f;
+}
+const sevTag = s => `<span class="tag ${s==='critical'?'crit':s==='high'?'bad':s==='medium'?'warn':'grey'}">${s}</span>`;
+function risk(a){ const f=findings(a); if(f.some(x=>x.sev==='critical')) return 'critical'; if(f.some(x=>x.sev==='high')) return 'high'; if(f.length) return 'medium'; return 'low'; }
+function requiredApprovals(spec){
+  const r=[{k:'security',who:'Security (IAM)',why:'all agents'}];
+  const has=(arr,v)=>arr.includes(v);
+  if(tenantId==='health'){ if(has(spec.dataClasses,'PHI')) r.push({k:'privacy',who:'Privacy Office',why:'PHI (HIPAA minimum necessary, BAA)'},{k:'clinical',who:'Clinical owner (CMIO)',why:'clinical workflow'}); if(has(spec.actions,'patient-facing')) r.push({k:'medicalDirector',who:'Medical Director',why:'patient-facing'}); if(has(spec.actions,'send-external')&&has(spec.actions,'patient-facing')) r.push({k:'tcpa',who:'Compliance',why:'patient SMS/calls consent (TCPA)'}); }
+  if(tenantId==='legal'){ if(has(spec.dataClasses,'Privileged')||has(spec.dataClasses,'Client-confidential')) r.push({k:'gc',who:'Office of General Counsel',why:'privileged/confidential data (Opinion 512)'}); if(has(spec.actions,'send-external')) r.push({k:'risk',who:'Risk Management',why:'external communications'}); if(has(spec.actions,'commit-contract')) r.push({k:'gc2',who:'Managing Partner',why:'contract authority'}); }
+  if(tenantId==='finance'){ r.push({k:'compliance',who:'Compliance (CCO)',why:'FINRA 3110 supervision'}); if(has(spec.actions,'customer-facing')) r.push({k:'principalReview',who:'Registered Principal',why:'FINRA 2210 communications'},{k:'records',who:'Records (Global Relay)',why:'17a-4 archiving'}); if(has(spec.dataClasses,'MNPI')) r.push({k:'barrier',who:'Control Room',why:'information barriers'}); if(has(spec.actions,'money')) r.push({k:'cio',who:'CIO + CFO',why:'authority limit'}); }
+  if(tenantId==='cx'){ if(has(spec.actions,'customer-facing')) r.push({k:'legal',who:'Legal & Privacy',why:'FTC §5 accuracy, bot disclosure'}); if(has(spec.actions,'money')||has(spec.actions,'commit-contract')) r.push({k:'finance',who:'CFO',why:'money/contract authority limit'}); if(has(spec.actions,'employment-decision')) r.push({k:'hr',who:'HR + Legal',why:'automated employment decision (CO AI Act)'}); if(has(spec.actions,'send-external')&&spec.systems.some(s=>/Telephony|Twilio/.test(s))) r.push({k:'tcpa',who:'Legal',why:'TCPA consent'}); if(has(spec.dataClasses,'PCI')) r.push({k:'pci',who:'PCI compliance',why:'card data'}); }
+  return r;
+}
+
+/* ============================================================ STATE / LOG ============================================================ */
+const STATE = {}; // per tenant: {log:[], reviews:{}, offboarded:{}, onboardQueue:[]}
+function S(){ return STATE[tenantId] || (STATE[tenantId]={log:[],done:{},onboardQueue:[],seq:1000}); }
+let hashPrev='0000';
+function hash(){ const h=(Math.random()*0xffffffff>>>0).toString(16).padStart(8,'0'); hashPrev=h; return h.slice(0,4)+'…'+h.slice(4); }
+function logEvent(type,text,actor){ S().log.unshift({t:new Date().toTimeString().slice(0,5),d:'Oct 26',type,text,actor:actor||'system',h:hash()}); refreshBadges(); }
+function toast(m){ const t=document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
+
+/* ============================================================ APP ============================================================ */
+let view='overview';
+function switchTenant(id){ tenantId=id; T=TENANTS[id]; ob={person:null,stage:0,found:[]}; document.getElementById('tenantSel').value=id; if(!S().seeded){ seedLog(); S().seeded=true; } document.getElementById('tenantMeta').innerHTML=`<b>${T.industry}</b><br>${T.meta}`; document.getElementById('footConn').textContent='Connected: '+T.conn; show(view); }
+function seedLog(){ const L=S().log; const seed={
+  health:[['scan','Scan completed: 14 agents across 9 platforms; 4 findings critical','system'],['incident','Incident logged on Post-Discharge Follow-up Caller (medication misread); review opened','Priya Shah'],['policy','Policy violation: Denials Appeal Writer processes PHI on a personal ChatGPT account with no BAA; escalated to Privacy Office','system'],['review','Quarterly review completed: Sepsis Early Warning Model — keep; calibration within tolerance','Dr. Sam Whitaker']],
+  legal:[['scan','Scan completed: 12 agents across 9 platforms; 3 findings critical','system'],['incident','Incident logged on Precedent Finder (ethical wall breach); OGC review opened','Daniel Krug'],['hris','Workday: Marcus Hale resignation received; lateral move; 3 client relationships affected','Workday'],['review','Quarterly review completed: Project Falcon Diligence Agent — keep; client consent verified','Rebecca Lin']],
+  finance:[['scan','Scan completed: 12 agents across 10 platforms; 3 findings critical','system'],['incident','Incident logged on KYC Refresh Agent (emails from departed associate mailbox, not archived); Compliance investigation opened','Victor Alonso'],['hris','Workday: Raj Patel resignation received; Form U5 clock started','Workday'],['policy','Policy violation: Research Note Summarizer uses a named-user Bloomberg login; license review requested','system']],
+  cx:[['scan','Scan completed: 13 agents across 11 platforms; 4 findings critical','system'],['incident','Incident logged on Refund Decision Agent ($708 credit on $59 dispute); Finance review opened','Elena Ruiz'],['action','Outbound Collections Caller paused by Legal pending DNC investigation','Sam Oduya'],['hris','Workday: Jenna Park termination received; last day Oct 30','Workday']]
+}[tenantId]; seed.reverse().forEach((s,i)=>L.unshift({t:['08:12','09:40','11:05','14:30'][i],d:['Oct 26','Oct 24','Oct 22','Oct 21'][i],type:s[0],text:s[1],actor:s[2],h:hash()})); }
+
+function refreshBadges(){
+  const ag=T.agents.filter(a=>a.status!=='retired');
+  const set=(id,n,hide0=true)=>{ const el=document.getElementById(id); el.textContent=n; el.style.display=(hide0&&!n)?'none':'inline-block'; };
+  set('n-roster',ag.length,false);
+  set('n-ghost',ag.filter(a=>{const p=person(a.owner);return (p&&p.status==='left')||credDeparted(a);}).length);
+  set('n-offboard',T.people.filter(p=>(p.status==='leaving'||p.status==='transfer')&&!S().done[p.id]).length);
+  set('n-reviews',ag.filter(a=>!reviewOk(a)).length);
+  set('n-onboard',S().onboardQueue.filter(q=>q.status==='pending').length);
+  set('n-incidents',T.incidents.filter(i=>!/Closed/.test(i.status)).length);
+}
+function show(v){ view=v; document.querySelectorAll('nav .nb').forEach(b=>b.classList.toggle('active',b.dataset.v===v)); closeOverlay(); refreshBadges(); const R={overview:rOverview,roster:rRoster,onboard:rOnboard,offboard:rOffboard,reviews:rReviews,ghost:rGhost,authority:rAuthority,compliance:rCompliance,incidents:rIncidents,log:rLog}; document.getElementById('main').innerHTML=R[v](); window.scrollTo(0,0); }
+document.querySelectorAll('nav .nb').forEach(b=>b.onclick=()=>show(b.dataset.v));
+function closeOverlay(){ document.getElementById('overlay').innerHTML=''; }
+function head(t,s,right=''){ return `<div class="topbar"><div><h1>${t}</h1><div class="sub">${s}</div></div><div>${right}</div></div>`; }
+const money = n => '$'+n.toLocaleString();
+
+/* ---------------- Overview ---------------- */
+function rOverview(){
+  const ag=T.agents.filter(a=>a.status!=='retired'); const all=ag.flatMap(a=>findings(a).map(f=>({...f,a})));
+  const crit=all.filter(f=>f.sev==='critical').length, high=all.filter(f=>f.sev==='high').length;
+  const cost=ag.reduce((s,a)=>s+a.costMo,0); const noOwner=ag.filter(a=>!ownerOk(a)).length; const overdue=ag.filter(a=>!reviewOk(a)).length;
+  const byPlat={}; ag.forEach(a=>byPlat[a.platform]=(byPlat[a.platform]||0)+1); const maxP=Math.max(...Object.values(byPlat));
+  const regRows=T.regs.map(r=>{ const res=r.controls.flatMap(c=>ag.map(a=>c.test(a))).filter(x=>x!=='na'); const fail=res.filter(x=>x==='fail').length; return `<tr class="click" onclick="show('compliance')"><td>${r.name.split(' — ')[0].split(' (')[0]}</td><td>${res.length-fail}/${res.length}</td><td>${fail?`<span class="tag ${fail>3?'bad':'warn'}">${fail} gaps</span>`:'<span class="tag ok">met</span>'}</td></tr>`; }).join('');
+  return head('Overview',`${T.name}: every agent the company runs, who answers for it, and what is out of policy today. ${T.turnover}`)+
+  `<div class="cards">
+    <div class="card"><div class="k">Agents in production</div><div class="v">${ag.length}</div><div class="d muted">${ag.filter(a=>a.kind==='vendor').length} vendor · ${ag.filter(a=>a.kind!=='vendor').length} built in-house</div></div>
+    <div class="card"><div class="k">Policy findings</div><div class="v" style="color:var(--bad)">${crit+high}</div><div class="d">${sevTag('critical')} ${crit} &nbsp; ${sevTag('high')} ${high}</div></div>
+    <div class="card"><div class="k">No accountable owner / review overdue</div><div class="v">${noOwner} / ${overdue}</div><div class="d muted">owner departed · past review date</div></div>
+    <div class="card"><div class="k">Monthly run cost</div><div class="v">${money(cost)}</div><div class="d muted">vendor contracts + tokens + seats</div></div>
+  </div>
+  <div class="grid3">
+    <div class="panel"><h2>Needs a decision this week</h2>${ag.map(a=>({a,f:findings(a)})).filter(x=>x.f.length&&x.f[0].sev!=='medium').sort((x,y)=>({critical:0,high:1,medium:2}[x.f[0].sev])-({critical:0,high:1,medium:2}[y.f[0].sev])||y.f.length-x.f.length).slice(0,9).map(x=>`<div class="finding"><div class="sev">${sevTag(x.f[0].sev)}</div><div><b style="cursor:pointer" onclick="openAgent('${x.a.id}')">${x.a.name}</b> <span class="muted">· ${x.a.platform} · ${pname(x.a.owner)}</span><br>${x.f[0].text}${x.f.length>1?` <span class="muted">· +${x.f.length-1} more finding${x.f.length>2?'s':''}</span>`:''}</div></div>`).join('')}<div class="right" style="margin-top:8px"><button class="btn sec sm" onclick="show('roster')">See all ${ag.length} agents</button></div></div>
+    <div>
+      <div class="panel"><h2>Regulatory posture</h2><table><thead><tr><th>Framework</th><th>Controls met</th><th></th></tr></thead><tbody>${regRows}</tbody></table></div>
+      <div class="panel"><h2>Agents by platform</h2>${Object.entries(byPlat).sort((a,b)=>b[1]-a[1]).map(([p,n])=>`<div style="display:grid;grid-template-columns:130px 1fr 24px;gap:8px;align-items:center;font-size:12px;margin:4px 0">${plat(p)}<div class="bar"><i style="width:${n/maxP*100}%"></i></div><span class="right">${n}</span></div>`).join('')}</div>
+      <div class="panel"><h2>People events pending</h2>${T.people.filter(p=>p.status==='leaving'||p.status==='transfer').map(p=>`<div style="font-size:12.5px;margin:4px 0"><b>${p.name}</b> · ${p.event==='transfer'?'transfer to '+p.to:'leaving'} ${fmt(p.last)} · ${T.agents.filter(a=>a.owner===p.id||a.credentials.some(c=>c.issuedTo===p.id)).length} agents affected ${S().done[p.id]?'<span class="tag ok">handled</span>':'<span class="tag bad">open</span>'}</div>`).join('')}<div class="right" style="margin-top:6px"><button class="btn sm" onclick="show('offboard')">Open offboarding</button></div></div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- Roster ---------------- */
+let rosterFilter={q:'',risk:'',plat:''};
+function rRoster(){
+  const ag=T.agents; const plats=[...new Set(ag.map(a=>a.platform))].sort();
+  return head('Agent roster','The system of record. Click an agent for its file: purpose, owner, access, credentials, approvals, authority, findings, and history.',`<button class="btn" onclick="show('onboard')">+ Request a new agent</button>`)+
+  `<div class="panel"><div class="toolbar"><input placeholder="Search agents, owners, systems…" value="${rosterFilter.q}" oninput="rosterFilter.q=this.value;document.getElementById('rosterBody').innerHTML=rosterRows()"><select onchange="rosterFilter.risk=this.value;document.getElementById('rosterBody').innerHTML=rosterRows()"><option value="">Any risk</option>${['critical','high','medium','low'].map(r=>`<option ${rosterFilter.risk===r?'selected':''}>${r}</option>`).join('')}</select><select onchange="rosterFilter.plat=this.value;document.getElementById('rosterBody').innerHTML=rosterRows()"><option value="">Any platform</option>${plats.map(p=>`<option ${rosterFilter.plat===p?'selected':''}>${p}</option>`).join('')}</select><span class="muted" id="rosterCount"></span></div>
+  <table><thead><tr><th>Agent</th><th>Platform</th><th>Owner</th><th>Data</th><th>Can do</th><th>Cost/mo</th><th>Next review</th><th>Risk</th><th>Status</th></tr></thead><tbody id="rosterBody">${rosterRows()}</tbody></table></div>`;
+}
+function rosterRows(){
+  const q=rosterFilter.q.toLowerCase(); const rows=T.agents.filter(a=>(!rosterFilter.risk||risk(a)===rosterFilter.risk)&&(!rosterFilter.plat||a.platform===rosterFilter.plat)&&(!q||[a.name,a.platform,pname(a.owner),a.systems.join(' '),a.dept].join(' ').toLowerCase().includes(q)));
+  setTimeout(()=>{const el=document.getElementById('rosterCount'); if(el) el.textContent=`${rows.length} of ${T.agents.length}`;},0);
+  return rows.map(a=>`<tr class="click" onclick="openAgent('${a.id}')"><td><b>${a.name}</b><br><span class="muted">${a.dept} · ${a.kind==='vendor'?'vendor':'in-house'}</span></td><td>${plat(a.platform)}</td><td>${ownerCell(a)}</td><td>${a.dataClasses.map(d=>`<span class="tag ${/PHI|MNPI|Privileged|PCI/.test(d)?'purple':'grey'}">${d}</span>`).join('')||'<span class="muted">—</span>'}</td><td>${a.actions.map(x=>`<span class="tag ${/money|commit|employment|clinical-decision/.test(x)?'bad':/facing|external/.test(x)?'warn':'grey'}">${x}</span>`).join('')}</td><td>${money(a.costMo)}</td><td class="${reviewOk(a)?'':'muted'}">${a.nextReview?fmt(a.nextReview):'never'}</td><td>${sevTag(risk(a))}</td><td>${statusTag(a)}</td></tr>`).join('');
+}
+function ownerCell(a){ const p=person(a.owner); if(!p) return '<span class="tag bad">none</span>'; return `${p.name}${p.status==='left'?' <span class="tag bad">left '+fmt(p.last)+'</span>':p.status==='leaving'?' <span class="tag warn">leaving '+fmt(p.last)+'</span>':p.status==='transfer'?' <span class="tag warn">transferring</span>':''}`; }
+function statusTag(a){ return a.status==='active'?'<span class="tag ok">active</span>':a.status==='paused'?'<span class="tag warn">paused</span>':a.status==='pending'?'<span class="tag blue">pending approval</span>':'<span class="tag grey">retired</span>'; }
+function openAgent(id){
+  const a=T.agents.find(x=>x.id===id); const f=findings(a); const p=person(a.owner);
+  document.getElementById('overlay').innerHTML=`<div class="drawer"><button class="close" onclick="closeOverlay()">×</button>
+    <h2>${a.name}</h2><div class="muted">${plat(a.platform)} · ${a.dept} · ${a.kind==='vendor'?'vendor agent':'built in-house'} · ${statusTag(a)} ${sevTag(risk(a))}</div>
+    <p style="margin:10px 0 0">${a.purpose}</p>
+    <h4>Accountability</h4><div class="kv"><span class="k">Owner</span><span>${ownerCell(a)}${p?' · '+p.title:''}</span><span class="k">Approvals</span><span>${Object.keys(a.approvals).filter(k=>a.approvals[k]).map(k=>`<span class="tag ok">${k}</span>`).join('')||'<span class="tag bad">none recorded</span>'}</span><span class="k">Authority</span><span>${a.authority?`${a.authority.limit}<br><span class="muted">signed ${a.authority.signer}, ${fmt(a.authority.date)} · <span class="mono">${a.authority.hash}</span></span>`:(a.actions.includes('money')||a.actions.includes('commit-contract')?'<span class="tag crit">required, not on file</span>':'<span class="muted">not required</span>')}</span></div>
+    <h4>Access</h4><div class="kv"><span class="k">Data classes</span><span>${a.dataClasses.map(d=>`<span class="tag purple">${d}</span>`).join('')||'—'}</span><span class="k">Actions</span><span>${a.actions.map(x=>`<span class="tag grey">${x}</span>`).join('')}</span><span class="k">Systems</span><span>${a.systems.join(', ')}</span><span class="k">Scopes</span><span>${a.scopesGranted} granted · ${a.scopesUsed} used (30d)</span><span class="k">Logs</span><span>${a.logs?'retained':'<span class="tag bad">none</span>'}</span>${a.baa!==null?`<span class="k">BAA</span><span>${a.baa?'on file':'<span class="tag crit">missing</span>'}</span>`:''}${a.matterScoped!==null?`<span class="k">Matter isolation</span><span>${a.matterScoped?'yes':'<span class="tag bad">no</span>'}</span>`:''}${a.client?`<span class="k">Client</span><span>${a.client} — ${a.ocg||''}</span>`:''}</div>
+    <h4>Credentials</h4>${a.credentials.map(c=>`<div style="font-size:12.5px;padding:4px 0;border-bottom:1px solid #f0f1f3"><span class="tag ${c.type==='consumer'?'crit':c.type==='svc'||c.type==='entra'?'ok':'grey'}">${c.type}</span> ${c.label} <span class="muted">· issued to ${pname(c.issuedTo)}</span></div>`).join('')||'<span class="muted">none recorded</span>'}
+    <h4>Economics &amp; activity</h4><div class="kv"><span class="k">Cost</span><span>${money(a.costMo)}/mo</span><span class="k">Runs (30d)</span><span>${a.runs30d.toLocaleString()}</span><span class="k">Cost / run</span><span>${a.runs30d?'$'+(a.costMo/a.runs30d).toFixed(2):'—'}</span><span class="k">Incidents (30d)</span><span>${a.incidents30d}</span><span class="k">Last / next review</span><span>${a.lastReview?fmt(a.lastReview):'never'} / ${a.nextReview?fmt(a.nextReview):'<span class="tag bad">not scheduled</span>'}</span></div>
+    <h4>Findings (${f.length})</h4>${f.map(x=>`<div class="finding"><div class="sev">${sevTag(x.sev)}</div><div>${x.text}</div></div>`).join('')||'<span class="muted">No open findings.</span>'}
+    <h4>Actions</h4><div style="display:flex;gap:6px;flex-wrap:wrap">${a.status==='active'?`<button class="btn sm danger" onclick="act('${a.id}','pause')">Pause</button>`:a.status==='paused'?`<button class="btn sm" onclick="act('${a.id}','resume')">Resume</button>`:''}<button class="btn sm sec" onclick="startReview('${a.id}')">Start review</button><button class="btn sm sec" onclick="reassignModal('${a.id}')">Change owner</button>${(a.actions.includes('money')||a.actions.includes('commit-contract')||a.systems.some(s=>/OMS/.test(s)))?`<button class="btn sm sec" onclick="signAuthority('${a.id}')">Sign authority limit</button>`:''}<button class="btn sm ghost" onclick="act('${a.id}','retire')">Retire</button></div>
+  </div>`;
+}
+function act(id,what){ const a=T.agents.find(x=>x.id===id); if(what==='pause'){a.status='paused';logEvent('action',`${a.name} paused; credentials held, runs blocked`,'you');} if(what==='resume'){a.status='active';logEvent('action',`${a.name} resumed`,'you');} if(what==='retire'){a.status='retired';a.credentials=[];logEvent('action',`${a.name} retired; ${a.credentials.length} credentials revoked; delete scheduled in 30 days`,'you');} toast(`${a.name}: ${what}d`); show(view); }
+function reassignModal(id){ const a=T.agents.find(x=>x.id===id); const opts=T.people.filter(p=>p.status==='active'&&!p.svc); document.getElementById('overlay').innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeOverlay()"><div class="modal"><h2>Change accountable owner — ${a.name}</h2><div class="form"><div class="row"><span class="k">New owner</span><select id="newOwner">${opts.map(p=>`<option value="${p.id}">${p.name} — ${p.title}</option>`).join('')}</select></div><div class="row"><span class="k">Reason</span><input id="reason" value="Departure of previous owner"></div></div><div class="right" style="margin-top:12px"><button class="btn sec" onclick="closeOverlay()">Cancel</button> <button class="btn" onclick="doReassign('${a.id}')">Record change</button></div></div></div>`; }
+function doReassign(id){ const a=T.agents.find(x=>x.id===id); const o=document.getElementById('newOwner').value; const old=pname(a.owner); a.owner=o; logEvent('owner',`${a.name}: owner changed ${old} → ${pname(o)} (${document.getElementById('reason').value}); new owner attested to purpose and access`,'you'); toast('Owner updated'); openAgent(id); }
+function signAuthority(id){ const a=T.agents.find(x=>x.id===id); const signers={health:'CMIO + CFO',legal:'Managing Partner + GC',finance:'CIO + CFO',cx:'VP CX + CFO'}[tenantId]; document.getElementById('overlay').innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeOverlay()"><div class="modal"><h2>Delegation of authority — ${a.name}</h2><p class="muted" style="font-size:12.5px">What this agent is permitted to commit the organization to, signed by a human who holds that authority. This becomes part of the agent’s file and the evidence pack.</p><div class="form"><div class="row"><span class="k">Permitted actions</span><input id="auLimit" value="${tenantId==='cx'?'Refunds and credits up to $50 per ticket; above that, route to a human':tenantId==='finance'?'Suggest only; no order placement or client communication':'Draft only; human signature required'}"></div><div class="row"><span class="k">Hard stop</span><input id="auStop" value="${tenantId==='cx'?'Daily aggregate $2,000; pause and alert Finance':'Any action outside scope pauses the agent'}"></div><div class="row"><span class="k">Signers</span><input id="auSign" value="${signers}"></div><div class="row"><span class="k">Review</span><input value="Quarterly, or on any incident" disabled></div></div><div class="right" style="margin-top:12px"><button class="btn sec" onclick="closeOverlay()">Cancel</button> <button class="btn" onclick="doSign('${a.id}')">Sign and record</button></div></div></div>`; }
+function doSign(id){ const a=T.agents.find(x=>x.id===id); a.authority={signer:document.getElementById('auSign').value,limit:document.getElementById('auLimit').value+' · '+document.getElementById('auStop').value,date:'2026-10-26',hash:hash()}; if(a.status==='paused') a.status='active'; logEvent('authority',`Authority limit signed for ${a.name}: "${a.authority.limit}" by ${a.authority.signer}`,'you'); toast('Authority recorded'); openAgent(id); }
+
+/* ---------------- Onboarding ---------------- */
+let wiz={step:1,spec:null};
+function rOnboard(){
+  const q=S().onboardQueue;
+  return head('Onboarding','A new agent gets a role card, least-privilege scopes, the approvals policy says it needs, a budget, a named manager, and a 30-day probation review before it is allowed to run.')+
+  `<div class="grid2"><div class="panel"><h2>Request a new agent <button class="btn sm sec" onclick="prefill()">Prefill example</button></h2><div class="wiz"><span class="${wiz.step===1?'on':''}">1 · Role card</span><span class="${wiz.step===2?'on':''}">2 · Access &amp; approvals</span><span class="${wiz.step===3?'on':''}">3 · Submit</span></div><div id="wizBody">${wizStep1()}</div></div>
+  <div><div class="panel"><h2>Approval queue</h2>${q.length?q.map(r=>`<div style="border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;font-size:12.5px"><b>${r.spec.name}</b> <span class="muted">· ${r.spec.platform} · requested by ${r.by}</span><br>${r.approvals.map(ap=>`<span class="tag ${ap.done?'ok':'warn'}">${ap.who}${ap.done?' ✓':''}</span>`).join('')}<div style="margin-top:6px">${r.status==='pending'?`<button class="btn sm" onclick="approveNext('${r.id}')">Approve as next approver</button>`:'<span class="tag ok">approved · in probation until '+fmt(r.probation)+'</span>'}</div></div>`).join(''):'<span class="muted">Nothing waiting.</span>'}</div>
+  <div class="panel"><h2>What the policy requires here</h2><div style="font-size:12.5px;line-height:1.6">${{health:'PHI → Privacy Office + clinical owner + BAA on file. Patient-facing → Medical Director. Outbound SMS/calls → consent evidence. Every agent → Security, named owner, 30-day probation review, quarterly thereafter.',legal:'Privileged or client-confidential data → OGC approval, matter-scoped workspace, enterprise terms only. Client matters → OCG consent check. External sends → Risk. Contract drafting → draft-only authority unless Managing Partner signs.',finance:'Every agent → Compliance (Rule 3110). Customer-facing → principal review + Global Relay archiving (2210, 17a-4). MNPI → Control Room. Anything near the OMS → signed authority limit. Named-user data licenses may not be used by agents.',cx:'Customer-facing → Legal (FTC §5, bot disclosure). Money or plan changes → CFO-signed authority limit with a hard stop. Outbound calls/SMS → TCPA consent basis. Card data → managed credentials. Anything scoring employees → HR + bias audit.'}[tenantId]}</div></div></div></div>`;
+}
+function wizStep1(s={}){ const pr=T.onboardPresets; const v=k=>s[k]||''; return `<div class="form">
+  <div class="row"><span class="k">Agent name</span><input id="w_name" value="${v('name')}" placeholder="${pr.name}"></div>
+  <div class="row"><span class="k">Purpose (one sentence)</span><textarea id="w_purpose" rows="2" placeholder="${pr.purpose}">${v('purpose')}</textarea></div>
+  <div class="row"><span class="k">Platform</span><select id="w_plat">${[...new Set([...Object.keys(PLAT)])].map(p=>`<option ${v('platform')===p?'selected':''}>${p}</option>`).join('')}</select></div>
+  <div class="row"><span class="k">Department</span><input id="w_dept" value="${v('dept')}" placeholder="${pr.dept}"></div>
+  <div class="row"><span class="k">Accountable owner</span><select id="w_owner">${T.people.filter(p=>p.status==='active'&&!p.svc).map(p=>`<option value="${p.id}">${p.name} — ${p.title}</option>`).join('')}</select></div>
+  <div class="row"><span class="k">Backup owner</span><select id="w_backup">${T.people.filter(p=>p.status==='active'&&!p.svc).map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div>
+  <div class="row"><span class="k">Data it will touch</span><div class="chk">${['PHI','PII','PCI','Privileged','Client-confidential','MNPI','Financial','Employee data','Public'].map(d=>`<label><input type="checkbox" name="w_data" value="${d}" ${(s.dataClasses||[]).includes(d)?'checked':''}>${d}</label>`).join('')}</div></div>
+  <div class="row"><span class="k">What it can do</span><div class="chk">${['read','write','send-external','customer-facing','patient-facing','money','commit-contract','employment-decision','clinical-decision'].map(d=>`<label><input type="checkbox" name="w_act" value="${d}" ${(s.actions||[]).includes(d)?'checked':''}>${d}</label>`).join('')}</div></div>
+  <div class="row"><span class="k">Systems (comma-sep)</span><input id="w_sys" value="${(s.systems||[]).join(', ')}" placeholder="${pr.systems.join(', ')}"></div>
+  <div class="row"><span class="k">Budget / month</span><input id="w_cost" type="number" value="${s.cost||''}" placeholder="${pr.cost}"></div>
+  </div><div class="right" style="margin-top:10px"><button class="btn" onclick="wizNext1()">Compute access &amp; approvals →</button></div>`; }
+function prefill(){ const pr=T.onboardPresets; document.getElementById('wizBody').innerHTML=wizStep1({...pr}); }
+function readSpec(){ const g=id=>document.getElementById(id).value; return { name:g('w_name')||T.onboardPresets.name, purpose:g('w_purpose')||T.onboardPresets.purpose, platform:g('w_plat'), dept:g('w_dept')||T.onboardPresets.dept, owner:g('w_owner'), backup:g('w_backup'), dataClasses:[...document.querySelectorAll('input[name=w_data]:checked')].map(x=>x.value), actions:[...document.querySelectorAll('input[name=w_act]:checked')].map(x=>x.value), systems:(g('w_sys')||T.onboardPresets.systems.join(', ')).split(',').map(s=>s.trim()).filter(Boolean), cost:+g('w_cost')||T.onboardPresets.cost }; }
+function wizNext1(){ wiz.spec=readSpec(); wiz.step=2; const s=wiz.spec; const req=requiredApprovals(s);
+  const scopes=s.systems.map(sys=>{ const w=s.actions.includes('write'); return `<div class="ctl"><span class="mono">${w?'read/write':'read'}</span><span>${sys}</span><span class="muted">${s.actions.includes('write')?'write limited to agent-created records':'read-only'}</span></div>`; }).join('');
+  const credType={health:'Managed service identity (svc-clinical-ai) via Epic app registration; no user-context tokens',legal:'Firm SSO service identity; matter-scoped workspace; enterprise API terms only',finance:'Enterprise org API key under svc-research-ai; outputs journaled to Global Relay',cx:'Service identity svc-cx-ai; scoped Zendesk/Billing tokens with 90-day rotation'}[tenantId];
+  const extras=[]; if(tenantId==='health'&&s.dataClasses.includes('PHI')) extras.push('BAA check: '+(['Abridge','Hippocratic AI','Epic','Tennr','Copilot Studio','Anthropic','OpenAI','Microsoft Copilot','Hebbia','Salesforce'].includes(s.platform)?'enterprise BAA on file for '+s.platform:'<b>no BAA on file for '+s.platform+' — request before approval</b>')); if(s.actions.includes('money')||s.actions.includes('commit-contract')) extras.push('Authority limit must be signed before first run'); if(s.actions.includes('customer-facing')||s.actions.includes('patient-facing')) extras.push('Automation disclosure text required in first turn; conversation logging on'); if(tenantId==='legal'&&(s.dataClasses.includes('Privileged')||s.dataClasses.includes('Client-confidential'))) extras.push('Matter-scoped workspace only; firm-wide index prohibited'); if(tenantId==='finance'&&s.actions.includes('customer-facing')) extras.push('Outputs route to principal review queue; Global Relay capture enabled');
+  document.querySelector('.wiz').innerHTML=`<span>1 · Role card</span><span class="on">2 · Access &amp; approvals</span><span>3 · Submit</span>`;
+  document.getElementById('wizBody').innerHTML=`<div class="banner info">Roster computed the least-privilege scopes and the approvals this agent needs under ${T.name}’s policy. Nothing here is optional; approvers can narrow scope but not skip a step.</div>
+  <h4 class="muted" style="margin:8px 0 4px;font-size:11.5px;text-transform:uppercase">Proposed scopes</h4>${scopes}
+  <h4 class="muted" style="margin:12px 0 4px;font-size:11.5px;text-transform:uppercase">Credential model</h4><div style="font-size:12.5px">${credType}</div>
+  <h4 class="muted" style="margin:12px 0 4px;font-size:11.5px;text-transform:uppercase">Required approvals (${req.length})</h4>${req.map(r=>`<div class="ctl"><span class="tag warn">required</span><span><b>${r.who}</b></span><span class="muted">${r.why}</span></div>`).join('')}
+  ${extras.length?`<h4 class="muted" style="margin:12px 0 4px;font-size:11.5px;text-transform:uppercase">Conditions</h4><ul style="font-size:12.5px;margin:0;padding-left:18px">${extras.map(e=>`<li>${e}</li>`).join('')}</ul>`:''}
+  <h4 class="muted" style="margin:12px 0 4px;font-size:11.5px;text-transform:uppercase">Lifecycle</h4><div style="font-size:12.5px">Probation review at 30 days (cost per run, error rate, scope creep) → quarterly review → owner re-attestation every 90 days → automatic pause if the owner leaves and no decision is recorded by their last day.</div>
+  <div class="right" style="margin-top:12px"><button class="btn sec" onclick="wiz.step=1;show('onboard')">← Back</button> <button class="btn" onclick="wizSubmit()">Submit for approval</button></div>`; }
+function wizSubmit(){ const s=wiz.spec; const req=requiredApprovals(s); const id='q'+(S().seq++); S().onboardQueue.unshift({id,spec:s,by:'you',status:'pending',approvals:req.map(r=>({...r,done:false}))}); logEvent('onboard',`New agent requested: ${s.name} (${s.platform}); owner ${pname(s.owner)}; ${req.length} approvals required: ${req.map(r=>r.who).join(', ')}`,'you'); wiz.step=1; toast('Submitted for approval'); show('onboard'); }
+function approveNext(id){ const r=S().onboardQueue.find(x=>x.id===id); const ap=r.approvals.find(a=>!a.done); ap.done=true; logEvent('approve',`${r.spec.name}: approved by ${ap.who}`,ap.who); if(r.approvals.every(a=>a.done)){ r.status='approved'; r.probation='2026-11-25'; const s=r.spec; T.agents.unshift(A({id:'n'+(S().seq++),name:s.name,platform:s.platform,owner:s.owner,dept:s.dept,purpose:s.purpose,dataClasses:s.dataClasses,actions:s.actions,systems:s.systems,credentials:[{type:'svc',issuedTo:T.people.find(p=>p.svc).id,label:'Managed service identity'}],baa:tenantId==='health'?true:null,matterScoped:tenantId==='legal'?true:null,costMo:s.cost,runs30d:0,lastReview:'2026-10-26',nextReview:'2026-11-25',approvals:Object.fromEntries(r.approvals.map(a=>[a.k,true])),logs:true,disclosure:true,archived:true,hrApproved:true,tcpa:true,scopesGranted:s.systems.length,scopesUsed:0,status:'active'})); logEvent('onboard',`${s.name} activated on a managed service identity; probation review scheduled ${fmt(r.probation)}`,'system'); toast('All approvals in — agent activated'); } show('onboard'); }
+
+/* ---------------- Offboarding ---------------- */
+let ob={person:null,stage:0,found:[]};
+function rOffboard(){
+  const evs=T.people.filter(p=>p.status==='leaving'||p.status==='transfer');
+  return head('Offboarding','Triggered by the HRIS. Discover every agent the person owns or credentialed, let their manager decide, execute, and write the record. Industry-specific steps are added automatically.')+
+  evs.map(p=>`<div class="event ${p.event}"><div><b>${p.event==='transfer'?'Workday: transfer':'Workday: termination'} — ${p.name}</b><div class="meta">${p.title} · ${p.dept} · ${p.event==='transfer'?'moves to '+p.to+' on':'last day'} ${fmt(p.last)} · Manager: ${p.manager}${p.note?' · '+p.note:''}</div></div><div>${S().done[p.id]?'<span class="tag ok">handled</span>':ob.person===p.id?'<span class="tag blue">in progress</span>':`<button class="btn" onclick="startOffboard('${p.id}')">Run discovery</button>`}</div></div>`).join('')+
+  `<div id="obFlow">${ob.person?obFlowHTML():''}</div>`;
+}
+function obFlowHTML(){ const p=person(ob.person); if(ob.stage>=5) return `<div class="panel"><h2>Offboarding complete — ${p.name}</h2><p style="font-size:13px">${ob.summary||''}</p><button class="btn sec" onclick="show('log')">View audit log</button> <button class="btn sec" onclick="show('roster')">View roster</button></div>`; return `<div class="steps">${['Trigger received','Discover','Manager decides','Execute','Record'].map((s,i)=>`<div class="step ${ob.stage>i?'done':ob.stage===i?'on':''}" id="obs${i}">${i+1} · ${s}</div>`).join('')}</div><div class="panel" id="obScanP"><h2>Discovery — ${p.name}</h2><div class="scan" id="obScan"></div></div><div id="obDecide"></div><div class="panel hidden" id="obExecP"><h2>Execution</h2><div class="scan" id="obExec"></div></div><div class="panel hidden" id="obDone"></div>`; }
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function typeLines(el,lines,d=200){ for(const l of lines){ el.innerHTML+=l+'<br>'; el.scrollTop=el.scrollHeight; await sleep(d);} }
+async function startOffboard(pid){ ob={person:pid,stage:1,found:[]}; show('offboard'); const p=person(pid);
+  const found=T.agents.filter(a=>a.status!=='retired'&&(a.owner===pid||a.credentials.some(c=>c.issuedTo===pid))); ob.found=found;
+  const byPlat={}; found.forEach(a=>{(byPlat[a.platform]=byPlat[a.platform]||[]).push(a);});
+  const el=document.getElementById('obScan');
+  const lines=[`workday    ${p.event==='transfer'?'transfer':'termination'} event · ${p.name} · ${p.title} · effective ${p.last}`,`okta       resolving identity → ${p.name.replace(/^Dr\.\s*/,'').split(' ')[0].toLowerCase()}.${p.name.split(' ').slice(-1)[0].toLowerCase()}@ · ${found.flatMap(a=>a.credentials).filter(c=>c.issuedTo===pid&&c.type==='oauth').length} OAuth grants · ${found.flatMap(a=>a.credentials).filter(c=>c.issuedTo===pid&&(c.type==='apikey'||c.type==='pat')).length} API keys/tokens · ${found.flatMap(a=>a.credentials).filter(c=>c.issuedTo===pid&&c.type==='license').length} named-user licenses`];
+  [...new Set(T.agents.map(a=>a.platform))].forEach(pl=>{ const n=(byPlat[pl]||[]).length; lines.push(`${pl.toLowerCase().padEnd(16)} ${n?`<span class="y">${n} agent${n>1?'s':''}</span> → ${byPlat[pl].map(a=>a.name).join(', ')}`:'0 agents'}`); });
+  lines.push(`classify   mapping data classes, actions, and authority for ${found.length} agents…`);
+  const sens=found.filter(a=>a.actions.some(x=>/money|commit|facing|clinical|employment/.test(x))||a.dataClasses.some(d=>/PHI|MNPI|Privileged|PCI/.test(d)));
+  lines.push(`<span class="g">done       ${found.length} agents · ${found.flatMap(a=>a.credentials).filter(c=>c.issuedTo===pid).length} live credentials issued to ${p.name.replace(/^Dr\.\s*/,'').split(' ')[0]} · ${sens.length} flagged sensitive</span>`);
+  await typeLines(el,lines,160);
+  ob.stage=2; document.getElementById('obs1').className='step done'; document.getElementById('obs2').className='step on';
+  const owners=T.people.filter(q=>q.status==='active'&&!q.svc);
+  const mgrIdx=Math.max(0,owners.findIndex(o=>p.manager.includes(o.name.split(' (')[0])));
+  document.getElementById('obDecide').innerHTML=`<div class="banner">${p.manager.split(':').slice(-1)[0].trim()} decides for each agent. Sensitive agents need a second approver. Nothing is deleted silently; retired agents are paused for 30 days first.</div>
+  ${found.map((a,i)=>{ const s=sens.includes(a); const f=findings(a); const why=[...new Set([...a.actions.filter(x=>/money|commit|facing|clinical|employment/.test(x)),...a.dataClasses.filter(d=>/PHI|MNPI|Privileged|PCI/.test(d))])].join(', ');
+    return `<div class="agent ${s?'sens':''}"><div><h3>${a.name} &nbsp;<span class="muted" style="font-weight:400">${plat(a.platform)}</span> ${s?`<span class="tag bad">sensitive · ${why}</span>`:''}</h3><div class="desc">${a.purpose}</div><div class="kv"><span class="k">Role for ${p.name.split(' ')[0]}</span><span>${a.owner===pid?'owner':''}${a.owner===pid&&a.credentials.some(c=>c.issuedTo===pid)?' + ':''}${a.credentials.some(c=>c.issuedTo===pid)?'credential holder':''}</span><span class="k">Credentials</span><span>${a.credentials.filter(c=>c.issuedTo===pid).map(c=>c.label).join(' · ')||'<span class="muted">none personal</span>'}</span><span class="k">Activity</span><span>${a.runs30d.toLocaleString()} runs / 30d · ${money(a.costMo)}/mo</span>${f.length?`<span class="k">Open findings</span><span>${f.slice(0,2).map(x=>sevTag(x.sev)+' '+x.text).join('<br>')}</span>`:''}</div></div>
+    <div class="decide"><label><input type="radio" name="d${i}" value="reassign" ${a.kind==='vendor'||i%3===0?'checked':''}> Reassign to a named owner<select id="o${i}">${owners.map((o,k)=>`<option value="${o.id}" ${k===mgrIdx?'selected':''}>${o.name}</option>`).join('')}</select></label><label><input type="radio" name="d${i}" value="rebind" ${!(a.kind==='vendor'||i%3===0)&&i%3===1?'checked':''}> Rebind to a managed service identity</label><label><input type="radio" name="d${i}" value="retire" ${!(a.kind==='vendor'||i%3===0)&&i%3===2?'checked':''}> Retire (pause 30 days, then delete)</label>${s?`<div class="note">Second approver: ${{health:'Privacy Office + CMIO',legal:'Office of General Counsel',finance:'Chief Compliance Officer',cx:'CFO + Legal'}[tenantId]}</div>`:''}${a.credentials.some(c=>c.type==='license'&&c.issuedTo===pid)?'<div class="note">Named-user license cannot be reassigned to an agent; rebind requires an enterprise data license or retire.</div>':''}</div></div>`; }).join('')}
+  <div class="panel"><h2>${T.industry}-specific steps added to this offboarding</h2><ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7">${T.extras.map(e=>`<li>${e}</li>`).join('')}</ul></div>
+  <div class="right"><button class="btn" id="obExecBtn" onclick="execOffboard()">Execute decisions</button></div>`;
+}
+async function execOffboard(){ const p=person(ob.person); const pid=ob.person; document.getElementById('obExecBtn').disabled=true; ob.stage=3; document.getElementById('obs2').className='step done'; document.getElementById('obs3').className='step on';
+  const ep=document.getElementById('obExecP'); ep.classList.remove('hidden'); const el=document.getElementById('obExec'); const lines=[]; let re=0,rb=0,rt=0,pend=0;
+  ob.found.forEach((a,i)=>{ const d=document.querySelector(`input[name=d${i}]:checked`).value; const o=document.getElementById('o'+i).value; const s=a.actions.some(x=>/money|commit|facing|clinical|employment/.test(x))||a.dataClasses.some(x=>/PHI|MNPI|Privileged|PCI/.test(x)); const svc=T.people.find(q=>q.svc).id; const mine=a.credentials.filter(c=>c.issuedTo===pid);
+    if(d==='reassign'){ re++; a.owner=o; a.credentials=a.credentials.map(c=>c.issuedTo===pid?{...c,issuedTo:svc,label:c.label.replace(/\(.*?\)/,'(service identity)'),type:c.type==='license'?'license':(c.type==='consumer'?'apikey':c.type)}:c); lines.push(`${a.name.padEnd(30).slice(0,30)} owner → ${pname(o)} · ${mine.length} credential(s) rotated to service identity · <span class="g">ok</span>`); }
+    else if(d==='rebind'){ rb++; a.credentials=a.credentials.map(c=>c.issuedTo===pid?{...c,issuedTo:svc,type:'svc',label:c.label.replace(/\(.*?\)/,'(service identity)')}:c); a.owner=person(a.owner)&&person(a.owner).status==='active'?a.owner:o; lines.push(`${a.name.padEnd(30).slice(0,30)} rebind → ${pname(svc)} · revoke ${p.name.split(' ')[0]}’s grants · <span class="g">ok</span>`); }
+    else { rt++; a.status='retired'; lines.push(`${a.name.padEnd(30).slice(0,30)} pause · revoke ${mine.length} credential(s) · delete scheduled ${fmt('2026-11-25')} · <span class="g">ok</span>`); }
+    if(s&&d!=='retire'){ pend++; a.status='paused'; lines.push(`${''.padEnd(30)} second approval requested · <span class="y">paused until approved</span>`); }
+    if(a.credentials.some(c=>c.type==='license'&&c.issuedTo!==pid&&/Bloomberg/.test(c.label))&&d!=='retire'){ lines.push(`${''.padEnd(30)} <span class="r">blocked: named-user Bloomberg license cannot back an agent; enterprise data license required</span>`); a.status='paused'; }
+  });
+  lines.push(`okta       revoke remaining grants for ${p.name} · <span class="g">ok</span>`);
+  T.extras.forEach(e=>lines.push(`${T.industry.toLowerCase().slice(0,10).padEnd(10)} ${e.split(':')[0]} · <span class="y">task created</span>`));
+  lines.push(`workday    offboarding checklist → "AI agents and automations" item complete · <span class="g">ok</span>`);
+  lines.push(`<span class="g">record     signed entry written · sha256:${hash()}</span>`);
+  await typeLines(el,lines,170);
+  ob.stage=5; document.getElementById('obs3').className='step done'; document.getElementById('obs4').className='step done';
+  S().done[pid]=true;
+  ob.summary=`${p.name}’s ${ob.found.length} agents are handled: ${re} reassigned, ${rb} rebound to a service identity, ${rt} retired; ${pend} paused pending a second approver. ${T.extras.length} ${T.industry.toLowerCase()} tasks were created for the teams named. The Workday checklist item is closed and a signed record is in the audit log.`;
+  document.getElementById('obDone').classList.remove('hidden'); document.getElementById('obDone').innerHTML=`<h2>Done</h2><p style="font-size:13px">${ob.summary}</p><button class="btn sec" onclick="show('log')">View audit log</button> <button class="btn sec" onclick="show('roster')">View roster</button>`;
+  logEvent('offboard',`Offboarding — ${p.name}: ${ob.found.length} agents discovered; ${p.manager} decided (${re} reassign, ${rb} rebind, ${rt} retire); ${pend} paused for second approval; ${T.extras.length} industry tasks created`,'you');
+  toast('Offboarding recorded'); refreshBadges();
+}
+
+/* ---------------- Reviews ---------------- */
+function rReviews(){ const ag=T.agents.filter(a=>a.status!=='retired'); const due=ag.filter(a=>!reviewOk(a)).sort((a,b)=>(a.nextReview?new Date(a.nextReview):0)-(b.nextReview?new Date(b.nextReview):0)); const upcoming=ag.filter(a=>reviewOk(a)).sort((a,b)=>new Date(a.nextReview)-new Date(b.nextReview));
+  const row=a=>`<tr class="click" onclick="startReview('${a.id}')"><td><b>${a.name}</b><br><span class="muted">${a.platform}</span></td><td>${ownerCell(a)}</td><td>${a.lastReview?fmt(a.lastReview):'<span class="muted">never</span>'}</td><td>${a.nextReview?fmt(a.nextReview):'<span class="tag bad">none</span>'}</td><td>${money(a.costMo)} · ${a.runs30d?'$'+(a.costMo/a.runs30d).toFixed(2)+'/run':'—'}</td><td>${a.incidents30d}</td><td>${a.scopesGranted}/${a.scopesUsed}</td><td><button class="btn sm">Review</button></td></tr>`;
+  return head('Reviews','The quarterly performance review for an agent: cost per outcome, error rate, incidents, permission creep, and whether the owner still vouches for it. Verdict: keep, retrain, reduce scope, or retire.')+
+  `<div class="panel"><h2>Overdue or never reviewed (${due.length})</h2><table><thead><tr><th>Agent</th><th>Owner</th><th>Last</th><th>Next</th><th>Cost</th><th>Incidents 30d</th><th>Scopes granted/used</th><th></th></tr></thead><tbody>${due.map(row).join('')||'<tr><td colspan="8" class="muted">Nothing overdue.</td></tr>'}</tbody></table></div>
+  <div class="panel"><h2>Upcoming (${upcoming.length})</h2><table><thead><tr><th>Agent</th><th>Owner</th><th>Last</th><th>Next</th><th>Cost</th><th>Incidents 30d</th><th>Scopes</th><th></th></tr></thead><tbody>${upcoming.map(row).join('')}</tbody></table></div>`; }
+function startReview(id){ const a=T.agents.find(x=>x.id===id); const f=findings(a); const cpr=a.runs30d?(a.costMo/a.runs30d):0; const sample=[['Output accepted without edit',a.kind==='vendor'?'74%':'61%'],['Output edited',a.kind==='vendor'?'22%':'31%'],['Output rejected / escalated',a.kind==='vendor'?'4%':'8%']];
+  const rec=f.some(x=>x.sev==='critical')?'retire-or-fix':(a.scopesGranted>Math.max(2,a.scopesUsed*2)?'reduce-scope':(a.incidents30d?'retrain':'keep'));
+  document.getElementById('overlay').innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeOverlay()"><div class="modal"><h2>Quarterly review — ${a.name}</h2><div class="muted" style="font-size:12.5px">${plat(a.platform)} · owner ${pname(a.owner)} · last review ${a.lastReview?fmt(a.lastReview):'never'}</div>
+  <div class="cards" style="margin-top:12px"><div class="card"><div class="k">Cost / month</div><div class="v" style="font-size:18px">${money(a.costMo)}</div></div><div class="card"><div class="k">Cost / run</div><div class="v" style="font-size:18px">${cpr?'$'+cpr.toFixed(2):'—'}</div></div><div class="card"><div class="k">Incidents (30d)</div><div class="v" style="font-size:18px">${a.incidents30d}</div></div><div class="card"><div class="k">Scopes granted / used</div><div class="v" style="font-size:18px">${a.scopesGranted} / ${a.scopesUsed}</div></div></div>
+  <h4 class="muted" style="font-size:11.5px;text-transform:uppercase;margin:6px 0">Output quality (sampled, 30 days)</h4>${sample.map(s=>`<div class="ctl"><span class="mono">${s[1]}</span><span>${s[0]}</span><span></span></div>`).join('')}
+  <h4 class="muted" style="font-size:11.5px;text-transform:uppercase;margin:12px 0 6px">Open findings</h4>${f.map(x=>`<div class="finding"><div class="sev">${sevTag(x.sev)}</div><div>${x.text}</div></div>`).join('')||'<span class="muted">None.</span>'}
+  <h4 class="muted" style="font-size:11.5px;text-transform:uppercase;margin:12px 0 6px">Owner attestation</h4><div class="form"><div class="row"><span class="k">Still needed?</span><select id="rv_need"><option>Yes — still in use and worth the cost</option><option>No — usage has dropped</option></select></div><div class="row"><span class="k">Purpose unchanged?</span><select id="rv_purpose"><option>Yes</option><option>No — scope has drifted</option></select></div><div class="row"><span class="k">Verdict</span><select id="rv_verdict"><option value="keep" ${rec==='keep'?'selected':''}>Keep</option><option value="retrain" ${rec==='retrain'?'selected':''}>Retrain (re-prompt / re-model) and re-review in 30 days</option><option value="reduce-scope" ${rec==='reduce-scope'?'selected':''}>Reduce scope to what is used</option><option value="retire-or-fix" ${rec==='retire-or-fix'?'selected':''}>Pause until critical findings are fixed</option><option value="retire">Retire</option></select></div></div><div class="muted" style="font-size:11.5px">Roster’s recommendation: <b>${rec}</b>${rec==='reduce-scope'?` — cut ${a.scopesGranted-a.scopesUsed} unused scopes`:''}.</div>
+  <div class="right" style="margin-top:12px"><button class="btn sec" onclick="closeOverlay()">Cancel</button> <button class="btn" onclick="doReview('${a.id}')">Record review</button></div></div></div>`; }
+function doReview(id){ const a=T.agents.find(x=>x.id===id); const v=document.getElementById('rv_verdict').value; a.lastReview='2026-10-26'; a.nextReview=v==='retrain'?'2026-11-25':'2027-01-26'; if(v==='reduce-scope'){a.scopesGranted=Math.max(a.scopesUsed,1);} if(v==='retire'){a.status='retired';} if(v==='retire-or-fix'){a.status='paused';} logEvent('review',`Quarterly review — ${a.name}: verdict ${v}; owner ${pname(a.owner)} attested (${document.getElementById('rv_need').value.split(' — ')[0]}); next review ${fmt(a.nextReview)}`,pname(a.owner)); toast('Review recorded'); show(view); }
+
+/* ---------------- Ghost audit ---------------- */
+function rGhost(){ const g=T.agents.filter(a=>a.status!=='retired'&&(!ownerOk(a)||credDeparted(a))); const creds=g.flatMap(a=>a.credentials.filter(c=>{const p=person(c.issuedTo);return p&&p.status==='left';})); const cost=g.reduce((s,a)=>s+a.costMo,0); const days=g.map(a=>{const p=person(a.owner);return p&&p.last?daysAgo(p.last):0;});
+  return head('Ghost agent audit','Agents still running whose owner has left, per the HRIS. This is the free scan a prospect sees first.',`<button class="btn sec" onclick="exportEvidence('ghost')">Export report</button>`)+
+  `<div class="cards"><div class="card"><div class="k">Ghost agents</div><div class="v" style="color:var(--bad)">${g.length}</div><div class="d muted">owner departed or credential orphaned</div></div><div class="card"><div class="k">Live credentials held</div><div class="v" style="color:var(--bad)">${creds.length}</div><div class="d muted">${creds.filter(c=>c.type==='consumer').length} on personal consumer accounts</div></div><div class="card"><div class="k">Avg / max days since owner left</div><div class="v">${days.length?Math.round(days.reduce((a,b)=>a+b,0)/days.length):0} / ${Math.max(0,...days)}</div></div><div class="card"><div class="k">Still spending</div><div class="v">${money(cost)}/mo</div><div class="d muted">${g.reduce((s,a)=>s+a.runs30d,0).toLocaleString()} runs in 30 days on nobody’s budget</div></div></div>
+  <div class="panel"><table><thead><tr><th>Agent</th><th>Platform</th><th>Former owner</th><th>Left</th><th>Still holds</th><th>Touches</th><th>Risk</th><th></th></tr></thead><tbody>${g.map(a=>{const p=person(a.owner); return `<tr><td><b>${a.name}</b><br><span class="muted">${a.purpose.slice(0,70)}…</span></td><td>${plat(a.platform)}</td><td>${p?p.name:'—'}</td><td>${p&&p.last?fmt(p.last)+' ('+daysAgo(p.last)+' d)':'—'}</td><td>${a.credentials.map(c=>`<span class="tag ${c.type==='consumer'?'crit':'grey'}">${c.label.split(' (')[0]}</span>`).join('')}</td><td>${a.dataClasses.map(d=>`<span class="tag purple">${d}</span>`).join('')}</td><td>${sevTag(risk(a))}</td><td><button class="btn sm" onclick="openAgent('${a.id}')">Resolve</button></td></tr>`;}).join('')||'<tr><td colspan="8" class="muted">No ghost agents. Nice.</td></tr>'}</tbody></table></div>`; }
+
+/* ---------------- Authority ---------------- */
+function rAuthority(){ const ag=T.agents.filter(a=>a.status!=='retired'&&(a.actions.some(x=>/money|commit-contract|clinical-decision|employment-decision|patient-facing|customer-facing/.test(x))||a.systems.some(s=>/OMS|Aladdin/.test(s))));
+  return head('Authority & delegation record','What each agent is permitted to commit the organization to, and which human signed for it. The equivalent of a signing-authority matrix, for non-human workers.')+
+  `<div class="panel"><table><thead><tr><th>Agent</th><th>Can</th><th>Signed limit</th><th>Signed by</th><th>Date</th><th>Record</th><th></th></tr></thead><tbody>${ag.map(a=>`<tr><td><b>${a.name}</b><br><span class="muted">${a.platform} · ${pname(a.owner)}</span></td><td>${a.actions.filter(x=>/money|commit|clinical|employment|facing/.test(x)).map(x=>`<span class="tag ${/money|commit|clinical|employment/.test(x)?'bad':'warn'}">${x}</span>`).join('')}${a.systems.some(s=>/OMS|Aladdin/.test(s))?'<span class="tag bad">OMS access</span>':''}</td><td>${a.authority?a.authority.limit:(a.actions.some(x=>/money|commit|clinical|employment/.test(x))||a.systems.some(s=>/OMS/.test(s))?'<span class="tag crit">none on file</span>':'<span class="muted">disclosure + logs only</span>')}</td><td>${a.authority?a.authority.signer:'—'}</td><td>${a.authority?fmt(a.authority.date):'—'}</td><td class="mono">${a.authority?a.authority.hash:'—'}</td><td>${(a.actions.some(x=>/money|commit|clinical|employment/.test(x))||a.systems.some(s=>/OMS/.test(s)))?`<button class="btn sm ${a.authority?'sec':''}" onclick="signAuthority('${a.id}')">${a.authority?'Re-sign':'Sign'}</button>`:''}</td></tr>`).join('')}</tbody></table></div>
+  <div class="panel"><h2>Why this exists</h2><div style="font-size:12.5px;line-height:1.6">${{health:'A patient-facing or clinical-decision agent acts under the medical staff’s authority. The Joint Commission/CHAI guidance expects the governing body to know what AI tools do; this record is how that is shown.',legal:'An agent that drafts engagement letters or communicates with counterparties acts under a lawyer’s license. Opinion 512 makes the supervising lawyer responsible; this record names them.',finance:'With generative and agentic AI carved out of SR 11-7/26-2, the firm needs its own basis for what an agent may do near portfolios and clients. FINRA 3110 still requires supervision of systems; this is the evidence.',cx:'Air Canada v. Moffatt: the company is bound by what its agent tells a customer. A signed, bounded delegation is what separates a controlled agent from a liability.'}[tenantId]}</div></div>`; }
+
+/* ---------------- Compliance ---------------- */
+function rCompliance(){ const ag=T.agents.filter(a=>a.status!=='retired');
+  return head('Compliance evidence',`Each framework that applies to ${T.name}, the controls Roster can test against the roster, and the current result. Export generates the evidence pack an auditor, insurer, or regulator asks for.`,`<button class="btn" onclick="exportEvidence('full')">Export evidence pack</button>`)+
+  T.regs.map(r=>{ const rows=r.controls.map(c=>{ const res=ag.map(a=>({a,r:c.test(a)})).filter(x=>x.r!=='na'); const fail=res.filter(x=>x.r==='fail'); return {c,res,fail}; }); const nf=rows.reduce((s,x)=>s+x.fail.length,0);
+    return `<div class="reg"><h3>${r.name}<span>${nf?`<span class="tag ${nf>3?'bad':'warn'}">${nf} gap${nf>1?'s':''}</span>`:'<span class="tag ok">all controls met</span>'}</span></h3><div class="why">${r.why}</div>${rows.map(x=>`<div class="ctl"><span>${x.res.length?`<span class="tag ${x.fail.length?'bad':'ok'}">${x.res.length-x.fail.length}/${x.res.length}</span>`:'<span class="tag grey">n/a</span>'}</span><span>${x.c.name}${x.fail.length?`<br><span class="muted">Failing: ${x.fail.map(y=>`<a href="#" onclick="openAgent('${y.a.id}');return false">${y.a.name}</a>`).join(', ')}</span>`:''}</span><span class="muted">${x.res.length} in scope</span></div>`).join('')}</div>`; }).join(''); }
+function exportEvidence(kind){ const ag=T.agents.filter(a=>a.status!=='retired'); const lines=[]; lines.push(`ROSTER EVIDENCE PACK — ${T.name} (${T.industry})`,`Generated 2026-10-26 by Roster · record hash sha256:${hash()}${hash()}`,`Scope: ${ag.length} agents in production across ${[...new Set(ag.map(a=>a.platform))].length} platforms; HRIS of record: Workday; identity: Okta`,'');
+  if(kind==='ghost'){ const g=ag.filter(a=>!ownerOk(a)||credDeparted(a)); lines.push('SECTION A — AGENTS WITH DEPARTED OWNERS OR ORPHANED CREDENTIALS'); g.forEach(a=>{const p=person(a.owner); lines.push(`- ${a.name} [${a.platform}] owner ${p?p.name:'none'} ${p&&p.last?'left '+p.last:''}; data: ${a.dataClasses.join('/')||'none'}; credentials: ${a.credentials.map(c=>c.label).join('; ')}; findings: ${findings(a).map(f=>f.sev+': '+f.text).join(' | ')}`);}); }
+  else { lines.push('SECTION A — INVENTORY'); ag.forEach(a=>lines.push(`- ${a.name} [${a.platform}, ${a.kind}] owner=${pname(a.owner)} data=${a.dataClasses.join('/')||'none'} actions=${a.actions.join('/')} cost=$${a.costMo}/mo lastReview=${a.lastReview||'never'} authority=${a.authority?('"'+a.authority.limit+'" signed '+a.authority.signer):'n/a'}`)); lines.push('','SECTION B — CONTROL RESULTS'); T.regs.forEach(r=>{ lines.push(`${r.name}`); r.controls.forEach(c=>{ const res=ag.map(a=>({a,r:c.test(a)})).filter(x=>x.r!=='na'); const fail=res.filter(x=>x.r==='fail'); lines.push(`  [${fail.length?'GAP':'MET'}] ${c.name}: ${res.length-fail.length}/${res.length}${fail.length?' — failing: '+fail.map(x=>x.a.name).join(', '):''}`); }); }); lines.push('','SECTION C — OPEN FINDINGS'); ag.forEach(a=>findings(a).forEach(f=>lines.push(`- [${f.sev.toUpperCase()}] ${a.name}: ${f.text}`))); lines.push('','SECTION D — INCIDENTS (90d)'); T.incidents.forEach(i=>lines.push(`- ${i.date} [${i.sev}] ${T.agents.find(a=>a.id===i.agent).name}: ${i.title} — ${i.status}`)); lines.push('','SECTION E — AUDIT TRAIL (latest)'); S().log.slice(0,12).forEach(l=>lines.push(`- ${l.d} ${l.t} ${l.type}: ${l.text} (${l.actor}) #${l.h}`)); }
+  const txt=lines.join('\n'); logEvent('export',`Evidence pack exported (${kind==='ghost'?'ghost agent report':'full pack'}): ${lines.length} lines`,'you');
+  document.getElementById('overlay').innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeOverlay()"><div class="modal" style="width:820px"><h2>Evidence pack</h2><div class="muted" style="font-size:12px;margin-bottom:8px">Plain-text preview. The real product emits signed PDF + JSON with per-agent attachments (approvals, authority records, logs).</div><pre class="evi">${txt.replace(/</g,'&lt;')}</pre><div class="right" style="margin-top:10px"><button class="btn sec" onclick="closeOverlay()">Close</button> <button class="btn" onclick="downloadTxt(${JSON.stringify(txt).replace(/"/g,'&quot;')})">Download .txt</button></div></div></div>`; }
+function downloadTxt(txt){ const b=new Blob([txt],{type:'text/plain'}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=`roster-evidence-${tenantId}.txt`; a.click(); }
+
+/* ---------------- Incidents ---------------- */
+function rIncidents(){ return head('Incidents','AI-related events recorded like safety or compliance events: what the agent did, who owns the response, and what changed. Logging an incident opens a review on the agent.',`<button class="btn" onclick="incidentModal()">+ Log incident</button>`)+
+  `<div class="panel"><table><thead><tr><th>Date</th><th>Severity</th><th>Agent</th><th>What happened</th><th>Status</th><th>Owner</th><th></th></tr></thead><tbody>${T.incidents.map((i,k)=>{const a=T.agents.find(x=>x.id===i.agent); return `<tr><td>${fmt(i.date)}</td><td>${sevTag(i.sev)}</td><td><b>${a.name}</b><br><span class="muted">${a.platform}</span></td><td>${i.title}</td><td>${/Closed/.test(i.status)?'<span class="tag ok">'+i.status+'</span>':'<span class="tag warn">'+i.status+'</span>'}</td><td>${pname(i.owner)}</td><td>${/Closed/.test(i.status)?'':`<button class="btn sm sec" onclick="closeIncident(${k})">Close</button>`} <button class="btn sm sec" onclick="startReview('${a.id}')">Review agent</button></td></tr>`;}).join('')}</tbody></table></div>`; }
+function incidentModal(){ document.getElementById('overlay').innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeOverlay()"><div class="modal"><h2>Log an incident</h2><div class="form"><div class="row"><span class="k">Agent</span><select id="in_agent">${T.agents.filter(a=>a.status!=='retired').map(a=>`<option value="${a.id}">${a.name} (${a.platform})</option>`).join('')}</select></div><div class="row"><span class="k">Severity</span><select id="in_sev"><option>high</option><option>medium</option><option>critical</option></select></div><div class="row"><span class="k">What happened</span><textarea id="in_title" rows="3" placeholder="Describe what the agent did, who noticed, and the impact"></textarea></div><div class="row"><span class="k">Response owner</span><select id="in_owner">${T.people.filter(p=>p.status==='active'&&!p.svc).map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div><div class="row"><span class="k">Immediate action</span><select id="in_act"><option value="pause">Pause the agent</option><option value="none">Keep running, open review</option></select></div></div><div class="right" style="margin-top:12px"><button class="btn sec" onclick="closeOverlay()">Cancel</button> <button class="btn" onclick="doIncident()">Record</button></div></div></div>`; }
+function doIncident(){ const g=id=>document.getElementById(id).value; const a=T.agents.find(x=>x.id===g('in_agent')); T.incidents.unshift({date:'2026-10-26',agent:a.id,sev:g('in_sev'),title:g('in_title')||'Incident logged (no description)',status:'Review open',owner:g('in_owner')}); a.incidents30d++; a.nextReview='2026-10-26'; if(g('in_act')==='pause') a.status='paused'; logEvent('incident',`Incident logged on ${a.name} (${g('in_sev')}): ${g('in_title').slice(0,80)}; ${g('in_act')==='pause'?'agent paused; ':''}review opened; response owner ${pname(g('in_owner'))}`,'you'); toast('Incident recorded; review opened'); show('incidents'); }
+function closeIncident(k){ const i=T.incidents[k]; i.status='Closed · '+ (i.status.split('·')[0].trim()); logEvent('incident',`Incident closed: ${i.title.slice(0,80)}`,'you'); show('incidents'); }
+
+/* ---------------- Log ---------------- */
+function rLog(){ return head('Audit log','What existed, who decided, what changed. Hash-chained; exportable for SOC 2, HIPAA, FINRA 17a-4, or an insurer.')+`<div class="panel"><div class="toolbar"><input placeholder="Filter…" oninput="document.querySelectorAll('#logRows .row').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(this.value.toLowerCase())?'':'none')"></div><div class="log" id="logRows">${S().log.map(l=>`<div class="row"><span class="t">${l.d} ${l.t} · ${l.type}</span><span>${l.text}<br><span class="muted">by ${l.actor}</span></span><span class="h">#${l.h}</span></div>`).join('')}</div></div>`; }
+
+
+/* ---------------- landing / access ---------------- */
+function enterApp(){ document.body.classList.add('in-app'); location.hash='#app'; window.scrollTo(0,0); }
+function leaveApp(){ document.body.classList.remove('in-app'); location.hash=''; window.scrollTo(0,0); }
+function requestAccess(){ document.getElementById('overlay').innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeOverlay()"><div class="modal" style="width:520px"><h2>Request early access</h2><p class="muted" style="font-size:13px;margin:0 0 12px">Tell us a little about your company and we’ll run a free Ghost Agent Audit: a read-only scan that lists agents whose owners have already left.</p><form class="form" id="accessForm" action="${ACCESS_FORM_ENDPOINT}" method="POST" onsubmit="return submitAccess(event)"><div class="row"><span class="k">Work email</span><input name="email" type="email" required placeholder="you@company.com"></div><div class="row"><span class="k">Company</span><input name="company" required></div><div class="row"><span class="k">Headcount</span><select name="size"><option>50–200</option><option>200–1,000</option><option>1,000–5,000</option><option>5,000+</option></select></div><div class="row"><span class="k">HRIS</span><select name="hris"><option>Rippling</option><option>Workday</option><option>BambooHR</option><option>Gusto</option><option>HiBob</option><option>Other</option></select></div><div class="row"><span class="k">Where agents live</span><input name="platforms" placeholder="Copilot Studio, Zapier, OpenAI, Salesforce…"></div><div class="right" style="margin-top:12px"><button type="button" class="btn sec" onclick="closeOverlay()">Cancel</button> <button type="submit" class="btn">Send</button></div></form></div></div>`; }
+const ACCESS_FORM_ENDPOINT = ''; // <-- paste your Formspree/Tally/Basin endpoint here, e.g. https://formspree.io/f/abcd1234
+function submitAccess(e){ if(!ACCESS_FORM_ENDPOINT){ e.preventDefault(); const f=new FormData(e.target); window.location.href=`mailto:kumark@claycorp.com?subject=${encodeURIComponent('Roster early access: '+f.get('company'))}&body=${encodeURIComponent('Email: '+f.get('email')+'\nCompany: '+f.get('company')+'\nHeadcount: '+f.get('size')+'\nHRIS: '+f.get('hris')+'\nPlatforms: '+f.get('platforms'))}`; closeOverlay(); toast('Opening your email client…'); return false; } return true; }
+if(location.hash==='#app') document.body.classList.add('in-app');
+
+/* ---------------- boot ---------------- */
+document.getElementById('tenantSel').innerHTML=Object.entries(TENANTS).map(([k,t])=>`<option value="${k}">${t.name} — ${t.industry}</option>`).join('');
+switchTenant('health');
+</script>
+</body>
+</html>
